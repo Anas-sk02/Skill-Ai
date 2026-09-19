@@ -473,3 +473,210 @@ Return ONLY valid JSON with this exact schema:
         raise HTTPException(status_code=502, detail=f'Gemini returned an invalid analysis: {error}') from error
     except Exception as error:
         raise HTTPException(status_code=502, detail=f'Gemini analysis failed: {error}') from error
+
+
+# =========================================================================
+# FEATURE 3: LIVE JOB MATCH & REAL-TIME JOB MARKET ANALYZER (DIFF ENGINE)
+# =========================================================================
+
+class JobDiffRequest(BaseModel):
+    job_description: Optional[str] = Field(default=None, max_length=50000)
+    job_url: Optional[str] = Field(default=None, max_length=2000)
+    resume_text: Optional[str] = Field(default=None, max_length=50000)
+    candidate_skills: list[str] = Field(default=[], max_length=100)
+    candidate_experience: Optional[str] = Field(default=None, max_length=5000)
+    target_company: Optional[str] = Field(default=None, max_length=200)
+
+
+def fetch_job_text_from_url(url: str) -> str:
+    """Fetch and strip basic text from a public job posting URL."""
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            url,
+            headers={
+                'User-Agent': (
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                )
+            },
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+            # Remove scripts & styles
+            clean_html = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', html, flags=re.DOTALL | re.IGNORECASE)
+            # Remove all html tags
+            text = re.sub(r'<[^>]+>', ' ', clean_html)
+            # Collapse whitespace
+            text = re.sub(r'\s+', ' ', text).strip()
+            return text[:20000]
+    except Exception as err:
+        return ""
+
+
+@app.post('/diff-job')
+def diff_job(req: JobDiffRequest) -> dict[str, Any]:
+    load_env_file()
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail='GEMINI_API_KEY is not configured in backend/.env. Please ensure your key is set.',
+        )
+
+    # 1. Resolve Job Description Content
+    jd_content = (req.job_description or "").strip()
+    if not jd_content and req.job_url:
+        fetched = fetch_job_text_from_url(req.job_url.strip())
+        if fetched and len(fetched) > 50:
+            jd_content = fetched
+
+    if not jd_content or len(jd_content) < 20:
+        raise HTTPException(
+            status_code=400,
+            detail='Please provide a valid Job Description text or a reachable Job URL.',
+        )
+
+    # 2. Resolve Candidate Information
+    candidate_profile = []
+    if req.resume_text:
+        candidate_profile.append(f"Candidate's Full Resume:\n{req.resume_text[:18000]}")
+    if req.candidate_skills:
+        candidate_profile.append(f"Candidate Verified Skills: {', '.join(req.candidate_skills)}")
+    if req.candidate_experience:
+        candidate_profile.append(f"Candidate Background & Context: {req.candidate_experience}")
+
+    if not candidate_profile:
+        raise HTTPException(
+            status_code=400,
+            detail='Please provide your resume, or enter your skills and background to diff against the job.',
+        )
+
+    candidate_text = "\n\n".join(candidate_profile)
+
+    # 3. Build Semantic Diff Prompt
+    schema_template = """
+Return ONLY valid JSON with this exact schema:
+{
+  "semantic_fit_score": 84,
+  "ats_compatibility_score": 79,
+  "role_title": "Extracted or Target Role Title",
+  "company_name": "Target Company or Extracted Company",
+  "overall_verdict": "2-3 sentence executive summary of the candidate fit, core strengths, and primary blocker for this specific opening.",
+  "keyword_audit": {
+    "matching_keywords": [
+      {
+        "keyword": "Python",
+        "category": "Programming / Core",
+        "status": "Verified in Resume & Projects"
+      }
+    ],
+    "missing_ats_keywords": [
+      {
+        "keyword": "Kubernetes",
+        "priority": "Critical ATS Filter",
+        "jd_context": "Exact or summarized quote from the JD requiring this skill",
+        "recommendation": "Specific resume modification or project bridge advice"
+      }
+    ]
+  },
+  "hard_requirements_audit": [
+    {
+      "requirement": "e.g. 3+ years experience with FastAPI/Python",
+      "status": "Met",
+      "evidence": "Detailed rationale based on candidate resume and projects"
+    },
+    {
+      "requirement": "e.g. Hands-on distributed systems or cloud deployment",
+      "status": "Partial",
+      "evidence": "Has Docker and basic AWS knowledge, but lacks large-scale Kubernetes cluster experience"
+    },
+    {
+      "requirement": "e.g. Master's in CS or 5+ yrs ML in production",
+      "status": "Missing",
+      "evidence": "Not indicated in candidate profile"
+    }
+  ],
+  "tailored_cover_letter": "Dear Hiring Manager at [Company],\\n\\n[Paragraph 1: High energy hook linking candidate's proven experience with the exact mission in the JD]...\\n\\n[Paragraph 2: Hard proof points directly referencing candidate's specific projects and metrics that solve the company's pain points]...\\n\\n[Paragraph 3: Confident, tailored call to action]...\\n\\nSincerely,\\nCandidate",
+  "interview_sprint_7day": [
+    {
+      "day": "Day 1",
+      "focus": "Top Missing ATS Keywords & Conceptual Bridge",
+      "action": "Build 1 minimal working demo or write concise notes bridging the top 2 missing skills.",
+      "sample_interview_q": "How would you implement or troubleshoot [missing skill] in our production stack?"
+    },
+    {
+      "day": "Day 2",
+      "focus": "Target Company Architecture & Stack Dissection",
+      "action": "Diagram this company's product flow and note latency/database trade-offs.",
+      "sample_interview_q": "Why would our team choose [Tech A] over [Tech B] for this specific product?"
+    },
+    {
+      "day": "Day 3",
+      "focus": "Domain Algorithm & Live Coding Patterns",
+      "action": "Complete 3 medium coding questions directly relevant to this job's core algorithms.",
+      "sample_interview_q": "Implement an efficient solution to handle high throughput data streams..."
+    },
+    {
+      "day": "Day 4",
+      "focus": "Hard Requirements & STAR Project Stories",
+      "action": "Draft 3 structured STAR stories specifically addressing the 'Partial' qualification items.",
+      "sample_interview_q": "Tell me about a complex technical hurdle you overcame when deploying..."
+    },
+    {
+      "day": "Day 5",
+      "focus": "System Design for this Company's Core Feature",
+      "action": "Whiteboard an end-to-end system design for the company's main feature.",
+      "sample_interview_q": "Design the core architecture for our flagship service..."
+    },
+    {
+      "day": "Day 6",
+      "focus": "Mock Technical Screen & Pressure Test",
+      "action": "Run a 45-minute timed mock screen focusing on live debugging and architecture trade-offs.",
+      "sample_interview_q": "How would you handle sudden 10x traffic spikes or database deadlocks?"
+    },
+    {
+      "day": "Day 7",
+      "focus": "Strategic Reverse-Interview Questions & Final Pitch",
+      "action": "Prepare 4 deep, insightful questions for the engineering manager and VP.",
+      "sample_interview_q": "What is the biggest technical debt or architecture roadblock your team is tackling this quarter?"
+    }
+  ]
+}
+"""
+
+    prompt = (
+        "You are an elite Silicon Valley technical recruiter, hiring manager, and ATS semantic diff engine. "
+        "Your task is to perform an uncompromising, deep semantic diff of the candidate's verified profile against the provided Job Description.\n\n"
+        f"TARGET JOB POSTING / DESCRIPTION:\n"
+        f"----------------------------------------\n"
+        f"{jd_content[:15000]}\n"
+        f"----------------------------------------\n\n"
+        f"CANDIDATE PROFILE & RESUME:\n"
+        f"----------------------------------------\n"
+        f"{candidate_text}\n"
+        f"----------------------------------------\n\n"
+        "EVALUATION CRITERIA:\n"
+        "1. Compute realistic Semantic Fit Score (0-100) and ATS Keyword Compatibility (0-100).\n"
+        "2. Extract matching keywords and critical missing ATS keywords with exact JD context snippets.\n"
+        "3. Audit all Hard Requirements from the JD, categorizing each as 'Met', 'Partial', or 'Missing' with objective evidence.\n"
+        "4. Write a compelling, highly customized 3-paragraph Cover Letter that directly references the company's specific stack and the candidate's real projects.\n"
+        "5. Formulate a rigorous 7-Day Technical Interview Countdown Sprint tailored to ace interviews for THIS EXACT JOB.\n\n"
+        f"{schema_template}"
+    )
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-2.5-flash')
+
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config={'response_mime_type': 'application/json', 'temperature': 0.2},
+        )
+        data = json.loads(response.text)
+        return data
+    except (json.JSONDecodeError, ValueError) as error:
+        raise HTTPException(status_code=502, detail=f'Gemini returned an invalid diff analysis: {error}') from error
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f'Job diff analysis failed: {error}') from error
+

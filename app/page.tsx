@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useRef, DragEvent, ChangeEvent } from 'react'
+import Link from 'next/link'
 import {
   ArrowRight,
   Check,
@@ -35,6 +36,7 @@ import {
   CheckCircle2,
   HelpCircle,
   Code2,
+  Zap,
 } from 'lucide-react'
 
 function YouTubeIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
@@ -383,8 +385,8 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      {/* Universal Top Header */}
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
             <Compass size={19} />
@@ -393,10 +395,25 @@ export default function Page() {
             skillgap<span className="text-primary">.ai</span>
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Personalized Career Intelligence</span>
-          <CircleHelp size={16} />
-        </div>
+
+        {/* Navigation Tabs */}
+        <nav className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 rounded-lg bg-primary/15 border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm"
+          >
+            <Layers size={13} /> Career Pivot Roadmap
+          </Link>
+          <Link
+            href="/job-match"
+            className="flex items-center gap-1.5 rounded-lg border border-border/70 px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+          >
+            <Zap size={13} /> Live Job Match & Diff Engine
+            <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[9px] font-bold">
+              NEW
+            </span>
+          </Link>
+        </nav>
       </header>
 
       {/* Main Container */}
@@ -911,12 +928,29 @@ function Results({
             skillgap<span className="text-primary">.ai</span>
           </span>
         </div>
-        <button
-          onClick={onReset}
-          className="rounded-lg border border-border px-3.5 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
-        >
-          ← Start new assessment
-        </button>
+
+        <div className="flex items-center gap-3">
+          <nav className="hidden sm:flex items-center gap-2">
+            <Link
+              href="/"
+              className="flex items-center gap-1 rounded-lg bg-primary/15 border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary"
+            >
+              <Layers size={12} /> Roadmap
+            </Link>
+            <Link
+              href="/job-match"
+              className="flex items-center gap-1 rounded-lg border border-border/70 px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+            >
+              <Zap size={12} /> Live Job Match
+            </Link>
+          </nav>
+          <button
+            onClick={onReset}
+            className="rounded-lg border border-border px-3.5 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+          >
+            ← Start new assessment
+          </button>
+        </div>
       </header>
 
       {/* Hero Intelligence Header */}
