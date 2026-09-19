@@ -6,12 +6,36 @@ Write-Host "===================================================" -ForegroundColo
 $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendDir = Join-Path $rootDir "backend"
 
-# Start Backend
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendDir'; if (Test-Path '.\venv\Scripts\Activate.ps1') { . .\venv\Scripts\Activate.ps1 }; uvicorn main:app --reload --port 8000"
+# 1. Start Backend with auto-setup
+$backendCmd = @"
+Set-Location '$backendDir'
+if (-not (Test-Path '.\venv\Scripts\Activate.ps1')) {
+    Write-Host 'Creating Python virtual environment and installing backend dependencies...' -ForegroundColor Cyan
+    python -m venv venv
+    . .\venv\Scripts\Activate.ps1
+    pip install -r requirements.txt
+} else {
+    . .\venv\Scripts\Activate.ps1
+}
+Write-Host 'Starting FastAPI Backend on port 8000...' -ForegroundColor Green
+uvicorn main:app --reload --port 8000
+"@
 
-# Start Frontend
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$rootDir'; if (Get-Command pnpm -ErrorAction SilentlyContinue) { pnpm dev } else { npm run dev }"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
 
-Write-Host "`nBoth services are launching in separate windows:" -ForegroundColor Green
+# 2. Start Frontend with auto-setup
+$frontendCmd = @"
+Set-Location '$rootDir'
+if (-not (Test-Path '.\node_modules')) {
+    Write-Host 'Installing frontend packages (this may take a minute)...' -ForegroundColor Cyan
+    if (Get-Command pnpm -ErrorAction SilentlyContinue) { pnpm install } else { npm install }
+}
+Write-Host 'Starting Next.js Frontend on port 3000...' -ForegroundColor Green
+if (Get-Command pnpm -ErrorAction SilentlyContinue) { pnpm dev } else { npm run dev }
+"@
+
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $frontendCmd
+
+Write-Host "`nBoth services are starting in separate windows:" -ForegroundColor Green
 Write-Host " - Backend API:  http://localhost:8000" -ForegroundColor Yellow
 Write-Host " - Web App:      http://localhost:3000" -ForegroundColor Yellow
