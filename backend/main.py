@@ -4,7 +4,36 @@ import os
 import re
 import zipfile
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from typing import Any, Optional
+
+# Automatically load .env file from the backend folder and parent folder
+def load_env_file():
+    backend_dir = Path(__file__).resolve().parent
+    env_paths = [backend_dir / '.env', backend_dir.parent / '.env', Path('.env')]
+    for env_path in env_paths:
+        if env_path.is_file():
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k and k not in os.environ:
+                                os.environ[k] = v
+            except Exception:
+                pass
+
+load_env_file()
+
+# Also try python-dotenv if installed
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -260,9 +289,13 @@ async def parse_resume(file: UploadFile = File(...)) -> dict[str, Any]:
 
 @app.post('/analyze')
 def analyze(profile: Profile) -> dict[str, Any]:
+    load_env_file()
     api_key = os.getenv('GEMINI_API_KEY')
     if not api_key:
-        raise HTTPException(status_code=503, detail='GEMINI_API_KEY is not configured in backend/.env.')
+        raise HTTPException(
+            status_code=503,
+            detail='GEMINI_API_KEY is not configured in backend/.env. Please ensure your key is set.',
+        )
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-2.5-flash')
 
