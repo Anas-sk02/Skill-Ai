@@ -2,6 +2,8 @@ import io
 import json
 import os
 import re
+import zipfile
+import xml.etree.ElementTree as ET
 from typing import Any, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -21,11 +23,14 @@ except ImportError:
     docx = None
 
 app = FastAPI(title='SkillGap.ai API', version='1.1.0')
+
+# Enable wide-open CORS for local development across all ports/hosts (localhost, 127.0.0.1, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(','),
-    allow_methods=['GET', 'POST', 'OPTIONS'],
-    allow_headers=['*'],
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 50+ Curated modern technology skills dictionary with smart word-boundary regex patterns
@@ -118,6 +123,8 @@ class Profile(BaseModel):
     learning_goal: str = Field(min_length=5, max_length=500)
     weekly_hours: str = Field(min_length=2, max_length=30)
     timeline: str = Field(min_length=2, max_length=30)
+    about_you: Optional[str] = Field(default=None, max_length=2000)
+    learning_style: Optional[str] = Field(default=None, max_length=120)
     resume_text: Optional[str] = Field(default=None, max_length=50000)
     resume_filename: Optional[str] = Field(default=None, max_length=200)
 
@@ -131,29 +138,67 @@ def extract_skills_from_text(text: str) -> list[str]:
     return matched_skills
 
 
+def extract_docx_builtin(content: bytes) -> str:
+    """Zero-dependency DOCX extractor using Python's standard zipfile and xml parser."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as zf:
+            xml_content = zf.read('word/document.xml')
+            tree = ET.fromstring(xml_content)
+            # Find all text tags in word XML namespace
+            namespaces = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+            paragraphs = []
+            for p in tree.findall('.//w:p', namespaces):
+                texts = [node.text for node in p.findall('.//w:t', namespaces) if node.text]
+                if texts:
+                    paragraphs.append(''.join(texts))
+            return '\n'.join(paragraphs).strip()
+    except Exception as err:
+        return ""
+
+
+def extract_pdf_fallback(content: bytes) -> str:
+    """Fallback text extraction for PDF if pypdf is unavailable."""
+    try:
+        # Basic stream text regex extraction
+        raw_str = content.decode('latin-1', errors='ignore')
+        # Find stream blocks
+        text_matches = re.findall(r'\((.*?)\)\s*Tj', raw_str)
+        if text_matches:
+            return " ".join(text_matches).strip()
+    except Exception:
+        pass
+    return ""
+
+
 def extract_text_from_file(filename: str, content: bytes) -> str:
     ext = os.path.splitext(filename)[1].lower()
     text = ""
 
     if ext == ".pdf":
-        if PdfReader is None:
-            raise HTTPException(status_code=500, detail="pypdf library is not installed on the server.")
-        try:
-            reader = PdfReader(io.BytesIO(content))
-            extracted_pages = [page.extract_text() or "" for page in reader.pages]
-            text = "\n".join(extracted_pages).strip()
-        except Exception as err:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF file: {err}")
+        if PdfReader is not None:
+            try:
+                reader = PdfReader(io.BytesIO(content))
+                extracted_pages = [page.extract_text() or "" for page in reader.pages]
+                text = "\n".join(extracted_pages).strip()
+            except Exception:
+                text = ""
+        
+        # Fallback if pypdf was missing or returned empty
+        if not text:
+            text = extract_pdf_fallback(content)
 
     elif ext == ".docx":
-        if docx is None:
-            raise HTTPException(status_code=500, detail="python-docx library is not installed on the server.")
-        try:
-            doc = docx.Document(io.BytesIO(content))
-            paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
-            text = "\n".join(paragraphs).strip()
-        except Exception as err:
-            raise HTTPException(status_code=400, detail=f"Failed to parse DOCX file: {err}")
+        if docx is not None:
+            try:
+                doc = docx.Document(io.BytesIO(content))
+                paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+                text = "\n".join(paragraphs).strip()
+            except Exception:
+                text = ""
+
+        # Fallback to standard library zipfile XML parser
+        if not text:
+            text = extract_docx_builtin(content)
 
     elif ext in [".txt", ".doc"]:
         try:
@@ -188,10 +233,10 @@ async def parse_resume(file: UploadFile = File(...)) -> dict[str, Any]:
     filename = file.filename or "uploaded_resume.txt"
     extracted_text = extract_text_from_file(filename, content)
 
-    if not extracted_text or len(extracted_text.strip()) < 10:
+    if not extracted_text or len(extracted_text.strip()) < 5:
         raise HTTPException(
             status_code=400,
-            detail="Could not extract readable text from the file. Please ensure it is not scanned or password-protected.",
+            detail="Could not extract readable text from this file. If it is an image-only scanned PDF, please upload a text-based PDF, DOCX, or TXT file.",
         )
 
     words = re.findall(r"\b\w+\b", extracted_text)
@@ -209,7 +254,7 @@ async def parse_resume(file: UploadFile = File(...)) -> dict[str, Any]:
         "character_count": len(extracted_text),
         "detected_skills": detected_skills,
         "preview": preview,
-        "extracted_text": extracted_text[:20000],  # cap text for prompt safety
+        "extracted_text": extracted_text[:25000],
     }
 
 
@@ -217,7 +262,7 @@ async def parse_resume(file: UploadFile = File(...)) -> dict[str, Any]:
 def analyze(profile: Profile) -> dict[str, Any]:
     api_key = os.getenv('GEMINI_API_KEY')
     if not api_key:
-        raise HTTPException(status_code=503, detail='GEMINI_API_KEY is not configured on the server.')
+        raise HTTPException(status_code=503, detail='GEMINI_API_KEY is not configured in backend/.env.')
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-2.5-flash')
 
@@ -226,16 +271,28 @@ def analyze(profile: Profile) -> dict[str, Any]:
         resume_instruction = f"""
 Candidate's Parsed Resume Content:
 ---
-{profile.resume_text[:12000]}
+{profile.resume_text[:15000]}
 ---
-CRITICAL: The candidate has provided their actual resume above (File: {profile.resume_filename or 'resume'}). 
+CRITICAL INSTRUCTIONS: The candidate has provided their actual resume above (File: {profile.resume_filename or 'resume'}). 
 Deeply tailor the analysis to what they have actually worked on in their resume. 
-- In the "summary", mention specific strengths and experiences identified in their resume and how they translate to the target role.
+- In "summary", mention specific strengths and experiences identified in their resume and how they translate to the target role.
 - In "missing_skills", precisely pinpoint what their resume is missing for the target role in the 2026 market.
 - In "resume_strengths", list 2-3 key transferable assets found in their resume.
 """
 
-    prompt = f'''You are a senior career intelligence analyst and technical recruiter. Analyze this learner profile against the current 2026 job market. Return ONLY valid JSON, no markdown fences. Never invent specific course URLs; use official or widely known URLs only and set url to https://www.google.com/search?q=... when uncertain.
+    about_you_section = ""
+    if profile.about_you:
+        about_you_section = f"""
+Candidate's Personal Story & Background Context ("About You"):
+"{profile.about_you}"
+"""
+    if profile.learning_style:
+        about_you_section += f"""
+Preferred Learning Style & Format:
+"{profile.learning_style}"
+"""
+
+    prompt = f'''You are a world-class empathetic career intelligence advisor and technical mentor. Analyze this learner profile against the current 2026 job market. Return ONLY valid JSON, no markdown fences. Never invent specific course URLs; use official or widely known URLs only and set url to https://www.google.com/search?q=... when uncertain.
 
 Learner Profile:
 - Target Role: {profile.target_role}
@@ -246,7 +303,13 @@ Learner Profile:
 - Weekly Time: {profile.weekly_hours}
 - Timeline: {profile.timeline}
 
+{about_you_section}
+
 {resume_instruction}
+
+Special Instructions:
+- Carefully tailor the advice, tone, and recommended resources to their "About You" personal context, current commitments, and their preferred learning style (e.g., if hands-on project based vs. video courses vs. documentation).
+- In the "summary", acknowledge their background story and uniquely encourage their strengths.
 
 Return this exact shape:
 {{
@@ -254,6 +317,7 @@ Return this exact shape:
   "summary": string,
   "start_here": string,
   "resume_strengths": [string],
+  "personalized_tip": string,
   "missing_skills": [
     {{
       "skill": string,
@@ -280,7 +344,7 @@ Return this exact shape:
     }}
   ]
 }}
-Include 4-6 skill gaps, 3-4 roadmap phases, and 5 resources. Prioritize skills employers actually ask for now, explain tradeoffs, and make the sequence fit the learner's hours and timeline.'''
+Include 4-6 skill gaps, 3-4 roadmap phases, and 5 resources matching their preferred style. Prioritize skills employers actually ask for now, explain tradeoffs, and make the sequence fit the learner's hours and timeline.'''
 
     try:
         response = model.generate_content(

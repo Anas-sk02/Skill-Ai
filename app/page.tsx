@@ -20,6 +20,9 @@ import {
   Layers,
   Award,
   BookOpen,
+  User,
+  Lightbulb,
+  GraduationCap,
 } from 'lucide-react'
 
 type Analysis = {
@@ -27,6 +30,7 @@ type Analysis = {
   summary: string
   start_here: string
   resume_strengths?: string[]
+  personalized_tip?: string
   missing_skills: { skill: string; priority: string; gap: string; why: string }[]
   roadmap: { phase: string; focus: string; outcome: string }[]
   resources: { title: string; provider: string; type: string; level: string; url: string; why: string }[]
@@ -65,6 +69,22 @@ const POPULAR_SKILLS = [
   'REST APIs',
 ]
 
+const LEARNING_STYLES = [
+  '🛠️ Hands-on Projects',
+  '📹 Video Tutorials',
+  '📚 Official Docs & Books',
+  '🧩 Interactive Coding',
+  '👥 Mentorship & Cohorts',
+]
+
+const CONTEXT_TAGS = [
+  '💼 Working Full-Time',
+  '🎓 College / University Student',
+  '🔄 Career Switcher',
+  '🆓 Free Resources Only',
+  '⚡ Fast-Track Interview Prep',
+]
+
 export default function Page() {
   const [targetRole, setTargetRole] = useState('')
   const [currentRole, setCurrentRole] = useState('')
@@ -74,6 +94,12 @@ export default function Page() {
   const [goal, setGoal] = useState('')
   const [hours, setHours] = useState('5–7 hours')
   const [timeline, setTimeline] = useState('3–6 months')
+  
+  // "About You" & Learning Preferences State
+  const [aboutYou, setAboutYou] = useState('')
+  const [learningStyle, setLearningStyle] = useState('🛠️ Hands-on Projects')
+  const [selectedContextTags, setSelectedContextTags] = useState<string[]>(['💼 Working Full-Time'])
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
@@ -88,16 +114,23 @@ export default function Page() {
   const progress = useMemo(() => {
     let score = 0
     if (targetRole) score += 20
-    if (currentRole) score += 20
+    if (currentRole) score += 15
     if (skills.length > 0) score += 20
-    if (goal) score += 20
-    if (resumeData) score += 20
+    if (goal) score += 15
+    if (aboutYou) score += 15
+    if (resumeData) score += 15
     return Math.min(100, score || 10)
-  }, [targetRole, currentRole, skills, goal, resumeData])
+  }, [targetRole, currentRole, skills, goal, aboutYou, resumeData])
 
   const toggleSkill = (skill: string) => {
     setSkills((current) =>
       current.includes(skill) ? current.filter((item) => item !== skill) : [...current, skill]
+    )
+  }
+
+  const toggleContextTag = (tag: string) => {
+    setSelectedContextTags((current) =>
+      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
     )
   }
 
@@ -145,15 +178,52 @@ export default function Page() {
     formData.append('file', file)
 
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${base}/parse-resume`, {
-        method: 'POST',
-        body: formData,
-      })
+      const endpoints = [
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+        'http://127.0.0.1:8000',
+      ]
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.detail || 'Failed to parse the uploaded resume.')
+      let response: Response | null = null
+
+      for (const base of endpoints) {
+        try {
+          response = await fetch(`${base}/parse-resume`, {
+            method: 'POST',
+            body: formData,
+          })
+          if (response.ok) break
+        } catch {
+          // continue fallback check
+        }
+      }
+
+      if (!response || !response.ok) {
+        if (response) {
+          const errData = await response.json().catch(() => ({}))
+          throw new Error(errData.detail || 'Failed to parse the uploaded resume.')
+        }
+
+        // Text fallback
+        if (fileExt === '.txt') {
+          const rawText = await file.text()
+          const words = rawText.match(/\b\w+\b/g) || []
+          const lower = rawText.toLowerCase()
+          const detected = POPULAR_SKILLS.filter((s) => lower.includes(s.toLowerCase()))
+          setResumeData({
+            filename: file.name,
+            file_size: file.size,
+            word_count: words.length,
+            character_count: rawText.length,
+            detected_skills: detected,
+            preview: rawText.slice(0, 300),
+            extracted_text: rawText.slice(0, 25000),
+          })
+          return
+        }
+
+        throw new Error(
+          'Could not reach backend API at http://localhost:8000. Please make sure the FastAPI backend window is running.'
+        )
       }
 
       const data: ParsedResume = await response.json()
@@ -197,7 +267,19 @@ export default function Page() {
     }
     setLoading(true)
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const endpoints = [
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+        'http://127.0.0.1:8000',
+      ]
+
+      // Combine about you context and selected tags
+      const combinedAboutYou = [
+        aboutYou.trim(),
+        selectedContextTags.length > 0 ? `Situation / Constraints: ${selectedContextTags.join(', ')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n')
+
       const payload = {
         target_role: targetRole,
         current_role: currentRole,
@@ -206,21 +288,35 @@ export default function Page() {
         learning_goal: goal,
         weekly_hours: hours,
         timeline: timeline,
+        about_you: combinedAboutYou || null,
+        learning_style: learningStyle,
         resume_text: resumeData?.extracted_text || null,
         resume_filename: resumeData?.filename || null,
       }
 
-      const response = await fetch(`${base}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      let response: Response | null = null
+      let lastErr: Error | null = null
 
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}))
+      for (const base of endpoints) {
+        try {
+          response = await fetch(`${base}/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          if (response.ok) break
+        } catch (e: any) {
+          lastErr = e
+        }
+      }
+
+      if (!response || !response.ok) {
+        if (response) {
+          const errJson = await response.json().catch(() => ({}))
+          throw new Error(errJson.detail || 'The analysis service encountered an issue.')
+        }
         throw new Error(
-          errJson.detail ||
-            'The analysis service could not respond. Check that the Python backend is running on port 8000.'
+          'Could not reach the backend server at http://localhost:8000. Please ensure the backend is running.'
         )
       }
 
@@ -238,6 +334,7 @@ export default function Page() {
       <Results
         analysis={analysis}
         resumeName={resumeData?.filename}
+        learningStyle={learningStyle}
         onReset={() => setAnalysis(null)}
       />
     )
@@ -256,23 +353,23 @@ export default function Page() {
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Live AI Career Intelligence</span>
+          <span className="hidden sm:inline">Personalized Career Intelligence</span>
           <CircleHelp size={16} />
         </div>
       </header>
 
       {/* Main Container */}
-      <section className="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-6 lg:grid-cols-[.85fr_1.15fr] lg:items-start lg:pt-10">
-        {/* Left Column: Value Proposition */}
-        <div className="lg:sticky lg:top-12">
+      <section className="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-4 lg:grid-cols-[.85fr_1.15fr] lg:items-start lg:pt-8">
+        {/* Left Column: Hero & Insights */}
+        <div className="lg:sticky lg:top-10">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary">
-            <Sparkles size={14} /> Powered by Gemini 2.5 & Resume Intelligence
+            <Sparkles size={14} /> AI Tailored to Who You Are & Where You Want to Go
           </div>
           <h1 className="max-w-xl text-balance text-4xl font-semibold tracking-[-0.06em] sm:text-5xl lg:text-6xl">
             Know what to learn <span className="text-primary">next.</span>
           </h1>
           <p className="mt-5 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Upload your resume or enter your background. We compare your actual experience against real-world 2026 job market demands and generate an actionable, gap-closing roadmap.
+            Tell the AI about your unique journey, upload your resume, or choose your skills. We craft a personalized roadmap matching your background, learning style, and available hours.
           </p>
 
           <div className="mt-8 flex items-center gap-4">
@@ -287,18 +384,18 @@ export default function Page() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">3,200+ professionals</span> mapped their career pivot
+              <span className="font-medium text-foreground">3,200+ learners</span> found clarity
             </p>
           </div>
 
           <div className="mt-10 grid grid-cols-2 gap-4 border-t border-border pt-6">
             <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-              <p className="font-mono text-2xl font-semibold text-primary">1-Click</p>
-              <p className="mt-1 text-xs text-muted-foreground">Smart resume skill extraction</p>
+              <p className="font-mono text-2xl font-semibold text-primary">100%</p>
+              <p className="mt-1 text-xs text-muted-foreground">Tailored to your learning style</p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-              <p className="font-mono text-2xl font-semibold text-primary">10×</p>
-              <p className="mt-1 text-xs text-muted-foreground">More targeted career roadmap</p>
+              <p className="font-mono text-2xl font-semibold text-primary">1-Click</p>
+              <p className="mt-1 text-xs text-muted-foreground">Resume & skill extraction</p>
             </div>
           </div>
         </div>
@@ -309,10 +406,10 @@ export default function Page() {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="font-mono text-xs uppercase tracking-[.18em] text-muted-foreground">
-                Your Profile
+                Your Assessment
               </p>
               <h2 className="mt-1.5 text-xl font-semibold tracking-tight">
-                Map your personalized gap analysis
+                Map your next career chapter
               </h2>
             </div>
             <span className="font-mono text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
@@ -328,21 +425,98 @@ export default function Page() {
           </div>
 
           <div className="space-y-6">
-            {/* 🧩 FEATURE 1: Smart Resume Parser & Skill Extractor */}
+            {/* 👤 NEW FEATURE: "About You" & Personal Context Section */}
             <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="text-primary" size={18} />
+                  <h3 className="text-sm font-semibold text-foreground">
+                    About You & Personal Context
+                  </h3>
+                </div>
+                <span className="text-[11px] font-mono text-primary/80 uppercase tracking-wider">
+                  Personalizes AI
+                </span>
+              </div>
+              <p className="mb-3 text-xs text-muted-foreground leading-relaxed">
+                The more context you share about your story, strengths, and daily routine, the more actionable and empathetic your AI roadmap will be.
+              </p>
+
+              <Field label="Tell the AI about your background & situation">
+                <textarea
+                  value={aboutYou}
+                  onChange={(e) => setAboutYou(e.target.value)}
+                  placeholder="e.g. I have 2 years experience in QA and want to switch to AI engineering. I learn best by coding hands-on projects rather than long theory. I work full-time so my study time is concentrated on weekends."
+                  rows={3}
+                />
+              </Field>
+
+              {/* Learning Style Chips */}
+              <div className="mt-4">
+                <label className="block mb-2 text-xs font-medium text-foreground">
+                  How do you learn best?
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {LEARNING_STYLES.map((style) => (
+                    <button
+                      type="button"
+                      key={style}
+                      onClick={() => setLearningStyle(style)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                        learningStyle === style
+                          ? 'border-primary bg-primary/20 text-primary shadow-sm'
+                          : 'border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Context / Situation Tags */}
+              <div className="mt-4">
+                <label className="block mb-2 text-xs font-medium text-foreground">
+                  Your current situation / constraints (Select all that apply)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CONTEXT_TAGS.map((tag) => {
+                    const isSelected = selectedContextTags.includes(tag)
+                    return (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => toggleContextTag(tag)}
+                        className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs transition-colors ${
+                          isSelected
+                            ? 'bg-primary/20 text-primary border border-primary/40 font-medium'
+                            : 'bg-secondary/40 text-muted-foreground border border-border hover:border-primary/40 hover:text-foreground'
+                        }`}
+                      >
+                        {isSelected && <Check size={12} />}
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 🧩 Smart Resume Parser & Skill Extractor */}
+            <div className="rounded-xl border border-border/80 bg-secondary/15 p-4 sm:p-5">
+              <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FileText className="text-primary" size={18} />
                   <h3 className="text-sm font-semibold text-foreground">
                     Smart Resume Parser & Skill Extractor
                   </h3>
                 </div>
-                <span className="text-[11px] font-mono text-primary/80 uppercase tracking-wider">
-                  Optional & Recommended
+                <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+                  Optional
                 </span>
               </div>
-              <p className="mb-4 text-xs text-muted-foreground leading-relaxed">
-                Upload your resume to let AI automatically extract your skills, analyze your project history, and tailor advice specifically to your background.
+              <p className="mb-3 text-xs text-muted-foreground leading-relaxed">
+                Upload your resume (.pdf, .docx, .doc, .txt up to 10MB) for instant skill extraction and deep resume-aligned gap analysis.
               </p>
 
               {/* Upload Dropzone */}
@@ -352,7 +526,7 @@ export default function Page() {
                   onDragLeave={onDragLeave}
                   onDrop={onDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-all ${
+                  className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 text-center transition-all ${
                     isDragging
                       ? 'border-primary bg-primary/10 shadow-inner'
                       : 'border-border/80 bg-secondary/20 hover:border-primary/60 hover:bg-secondary/40'
@@ -368,38 +542,35 @@ export default function Page() {
 
                   {parsingResume ? (
                     <div className="flex flex-col items-center py-2">
-                      <Loader2 className="animate-spin text-primary" size={32} />
-                      <p className="mt-3 text-sm font-medium text-foreground">
-                        Parsing resume & identifying skills...
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Running deep keyword & layout extraction
+                      <Loader2 className="animate-spin text-primary" size={28} />
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        Extracting resume text & skills...
                       </p>
                     </div>
                   ) : (
                     <>
-                      <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
-                        <UploadCloud size={22} />
+                      <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                        <UploadCloud size={20} />
                       </div>
-                      <p className="mt-3 text-sm font-medium text-foreground">
+                      <p className="mt-2 text-xs font-medium text-foreground">
                         <span className="text-primary underline-offset-4 hover:underline">
-                          Click to upload
+                          Click to upload resume
                         </span>{' '}
                         or drag and drop
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Supports <span className="text-foreground">.pdf, .docx, .doc, .txt</span> up to 10MB
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        Supports PDF, DOCX, DOC, TXT (up to 10MB)
                       </p>
                     </>
                   )}
                 </div>
               ) : (
                 /* Parsed Resume Info Box */
-                <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+                <div className="space-y-3 rounded-lg border border-border bg-card p-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                        <FileCheck size={20} />
+                      <div className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                        <FileCheck size={18} />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{resumeData.filename}</p>
@@ -416,17 +587,17 @@ export default function Page() {
                       type="button"
                       onClick={removeResume}
                       title="Remove resume"
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
 
-                  {/* Detected Skills Section */}
-                  <div className="mt-3 border-t border-border/80 pt-3">
+                  {/* Detected Skills */}
+                  <div className="border-t border-border/80 pt-2.5">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-medium text-muted-foreground">
-                        Detected Skills ({resumeData.detected_skills.length})
+                        Detected Technologies ({resumeData.detected_skills.length})
                       </p>
                       {resumeData.detected_skills.length > 0 && (
                         <button
@@ -448,7 +619,7 @@ export default function Page() {
                               type="button"
                               key={skill}
                               onClick={() => toggleSkill(skill)}
-                              className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-colors ${
+                              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
                                 isAlreadySelected
                                   ? 'bg-primary/20 text-primary border border-primary/40'
                                   : 'bg-secondary text-muted-foreground border border-border hover:border-primary/40 hover:text-foreground'
@@ -462,7 +633,7 @@ export default function Page() {
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground italic">
-                        No standard technologies automatically matched from text. You can select or type them below.
+                        No standard technologies automatically matched. You can select them below.
                       </p>
                     )}
                   </div>
@@ -482,15 +653,15 @@ export default function Page() {
                 <input
                   value={targetRole}
                   onChange={(e) => setTargetRole(e.target.value)}
-                  placeholder="e.g. Senior Backend Engineer / AI Engineer"
+                  placeholder="e.g. Senior AI Engineer / Product Data Analyst"
                 />
               </Field>
 
-              <Field label="Where are you starting from?" hint="Current level">
+              <Field label="Where are you starting from?" hint="Current background">
                 <input
                   value={currentRole}
                   onChange={(e) => setCurrentRole(e.target.value)}
-                  placeholder="e.g. Junior Dev, CS Student, Career Switcher"
+                  placeholder="e.g. Backend Dev, Student, QA Engineer"
                 />
               </Field>
             </div>
@@ -498,11 +669,10 @@ export default function Page() {
             {/* Known Skills Selector */}
             <Field
               label={`What skills do you know? (${skills.length} selected)`}
-              hint="Click to toggle or add your own"
+              hint="Click chips to toggle or add custom"
             >
               <div className="space-y-3">
-                {/* Popular Skill Chips */}
-                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
                   {POPULAR_SKILLS.map((skill) => {
                     const isSelected = skills.includes(skill)
                     return (
@@ -523,14 +693,13 @@ export default function Page() {
                   })}
                 </div>
 
-                {/* Custom Skill Input */}
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={customSkill}
                     onChange={(e) => setCustomSkill(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomSkill())}
-                    placeholder="Type custom skill and press Enter..."
+                    placeholder="Add custom skill..."
                     className="text-xs"
                   />
                   <button
@@ -543,7 +712,6 @@ export default function Page() {
                   </button>
                 </div>
 
-                {/* Selected Custom/Extra Skills tags if any not in popular */}
                 {skills.filter((s) => !POPULAR_SKILLS.includes(s)).length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                     <span className="text-[11px] text-muted-foreground">Custom:</span>
@@ -569,7 +737,7 @@ export default function Page() {
               </div>
             </Field>
 
-            {/* Proficiency & Available Time */}
+            {/* Proficiency & Weekly Time */}
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="How would you rate yourself?">
                 <Select
@@ -588,12 +756,12 @@ export default function Page() {
               </Field>
             </div>
 
-            {/* Learning Goal & Target Timeline */}
-            <Field label="What does success look like?" hint="Your motivation shapes the roadmap">
+            {/* Goal & Target Timeline */}
+            <Field label="What does success look like?" hint="Your motivation shapes the sequence">
               <textarea
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="e.g. Land my first AI/Full-Stack role at a tech startup within 4 months"
+                placeholder="e.g. Land my first full-stack AI role at a tech startup within 4 months"
                 rows={3}
               />
             </Field>
@@ -624,17 +792,17 @@ export default function Page() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin" size={17} /> Building your personalized roadmap...
+                  <Loader2 className="animate-spin" size={17} /> Tailoring your AI career roadmap...
                 </>
               ) : (
                 <>
-                  Analyze my skill gap {resumeData && 'with resume'} <ArrowRight size={17} />
+                  Generate my personalized analysis <ArrowRight size={17} />
                 </>
               )}
             </button>
 
             <p className="text-center text-[11px] text-muted-foreground">
-              Your resume data is processed securely in memory and used exclusively to generate your analysis.
+              Your information is processed securely in memory and used exclusively to generate your analysis.
             </p>
           </div>
         </div>
@@ -681,10 +849,12 @@ function Select({
 function Results({
   analysis,
   resumeName,
+  learningStyle,
   onReset,
 }: {
   analysis: Analysis
   resumeName?: string
+  learningStyle?: string
   onReset: () => void
 }) {
   return (
@@ -703,7 +873,7 @@ function Results({
           onClick={onReset}
           className="rounded-lg border border-border px-3.5 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
         >
-          ← Start new analysis
+          ← Start new assessment
         </button>
       </header>
 
@@ -717,7 +887,12 @@ function Results({
             </span>
             {resumeName && (
               <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
-                <FileCheck size={12} /> Tailored to {resumeName}
+                <FileCheck size={12} /> Resume: {resumeName}
+              </span>
+            )}
+            {learningStyle && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/50 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <GraduationCap size={12} /> {learningStyle}
               </span>
             )}
           </div>
@@ -728,6 +903,21 @@ function Results({
             {analysis.summary}
           </p>
         </div>
+
+        {/* Personalized Tip Banner (if present) */}
+        {analysis.personalized_tip && (
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 p-4 sm:p-5 flex items-start gap-3 shadow-lg shadow-primary/5">
+            <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0 mt-0.5">
+              <Lightbulb size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-primary">Tailored Advisor Tip For You</h3>
+              <p className="mt-1 text-xs sm:text-sm text-foreground/90 leading-relaxed">
+                {analysis.personalized_tip}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Readiness Score & Priority Gaps */}
         <div className="grid gap-6 md:grid-cols-[.85fr_1.15fr]">
@@ -849,7 +1039,7 @@ function Results({
           <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
             <div className="flex items-center gap-2 mb-5">
               <BookOpen className="text-primary" size={20} />
-              <h2 className="font-semibold text-base">Recommended Resources</h2>
+              <h2 className="font-semibold text-base">Recommended Resources ({learningStyle || 'Personalized'})</h2>
             </div>
 
             <div className="space-y-3.5">

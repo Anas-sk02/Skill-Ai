@@ -10,13 +10,12 @@ $backendDir = Join-Path $rootDir "backend"
 $backendCmd = @"
 Set-Location '$backendDir'
 if (-not (Test-Path '.\venv\Scripts\Activate.ps1')) {
-    Write-Host 'Creating Python virtual environment and installing backend dependencies...' -ForegroundColor Cyan
+    Write-Host 'Creating Python virtual environment...' -ForegroundColor Cyan
     python -m venv venv
-    . .\venv\Scripts\Activate.ps1
-    pip install -r requirements.txt
-} else {
-    . .\venv\Scripts\Activate.ps1
 }
+. .\venv\Scripts\Activate.ps1
+Write-Host 'Ensuring backend packages are installed...' -ForegroundColor Cyan
+pip install -r requirements.txt
 Write-Host 'Starting FastAPI Backend on port 8000...' -ForegroundColor Green
 uvicorn main:app --reload --port 8000
 "@
