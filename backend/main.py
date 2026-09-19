@@ -385,9 +385,52 @@ Return this exact shape:
       "focus_topic": string,
       "why": string
     }}
-  ]
+  ],
+  "mind_map": {
+    "pillars": [
+      {{
+        "category": "Foundational Tools",
+        "skills": [{{ "name": string, "type": "verified_strength" | "bridge_skill", "description": string }}]
+      }},
+      {{
+        "category": "Domain Architecture",
+        "skills": [{{ "name": string, "type": "core_competency", "description": string }}]
+      }},
+      {{
+        "category": "Critical Gaps",
+        "skills": [{{ "name": string, "type": "urgent_priority", "description": string }}]
+      }},
+      {{
+        "category": "Production & System Design",
+        "skills": [{{ "name": string, "type": "production_scale", "description": string }}]
+      }}
+    ]
+  },
+  "study_plan": {
+    "weekly_hours_allocated": string,
+    "schedule": [
+      {{
+        "day": string,
+        "session_type": "Deep Dive Concept" | "Hands-On Lab / Coding" | "Capstone Architecture" | "Active Audit & Review",
+        "duration": string,
+        "focus": string,
+        "actionable_deliverable": string
+      }}
+    ],
+    "pro_tip": string
+  },
+  "spaced_repetition": {
+    "framework": [
+      {{
+        "stage": "Day 1 (Immediate Encode)" | "Day 3 (First Recall)" | "Day 7 (Structural Mastery)" | "Day 14 (Blind Implementation)" | "Day 30 (Interview & Production Audit)",
+        "technique": string,
+        "feynman_prompt": string,
+        "blank_screen_challenge": string
+      }}
+    ]
+  }
 }}
-Include 4-6 skill gaps, 3-4 roadmap phases, 5 standard resources, and 3-4 top YouTube masterclasses tailored to their missing skills. Prioritize skills employers actually ask for now, explain tradeoffs, and make the sequence fit the learner's hours and timeline.'''
+Include 4-6 skill gaps, 3-4 roadmap phases, 5 standard resources, 3-4 top YouTube masterclasses, a 4-pillar domain mind map, a personalized weekly study plan matching their hours, and the 5-stage spaced repetition active recall framework.'''
 
     try:
         response = model.generate_content(

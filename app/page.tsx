@@ -27,6 +27,14 @@ import {
   Video,
   Clock,
   ExternalLink,
+  Calendar,
+  Repeat,
+  Network,
+  LayoutDashboard,
+  BrainCircuit,
+  CheckCircle2,
+  HelpCircle,
+  Code2,
 } from 'lucide-react'
 
 function YouTubeIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
@@ -60,6 +68,31 @@ type Analysis = {
     focus_topic: string
     why: string
   }[]
+  mind_map?: {
+    pillars: {
+      category: string
+      skills: { name: string; type: string; description: string }[]
+    }[]
+  }
+  study_plan?: {
+    weekly_hours_allocated?: string
+    schedule: {
+      day: string
+      session_type: string
+      duration: string
+      focus: string
+      actionable_deliverable: string
+    }[]
+    pro_tip?: string
+  }
+  spaced_repetition?: {
+    framework: {
+      stage: string
+      technique: string
+      feynman_prompt: string
+      blank_screen_challenge: string
+    }[]
+  }
 }
 
 type ParsedResume = {
@@ -73,26 +106,9 @@ type ParsedResume = {
 }
 
 const POPULAR_SKILLS = [
-  'Python',
-  'JavaScript',
-  'TypeScript',
-  'React',
-  'Next.js',
-  'Node.js',
-  'FastAPI',
-  'SQL',
-  'PostgreSQL',
-  'MongoDB',
-  'Docker',
-  'AWS',
-  'Git / GitHub',
-  'Machine Learning',
-  'PyTorch',
-  'Data Analysis',
-  'Generative AI / LLMs',
-  'System Design',
-  'Tailwind CSS',
-  'REST APIs',
+  'Python', 'JavaScript', 'TypeScript', 'React', 'Next.js', 'Node.js', 'FastAPI',
+  'SQL', 'PostgreSQL', 'MongoDB', 'Docker', 'AWS', 'Git / GitHub', 'Machine Learning',
+  'PyTorch', 'Data Analysis', 'Generative AI / LLMs', 'System Design', 'Tailwind CSS', 'REST APIs',
 ]
 
 const LEARNING_STYLES = [
@@ -219,7 +235,7 @@ export default function Page() {
           })
           if (response.ok) break
         } catch {
-          // continue fallback check
+          // continue
         }
       }
 
@@ -298,7 +314,6 @@ export default function Page() {
         'http://127.0.0.1:8000',
       ]
 
-      // Combine about you context and selected tags
       const combinedAboutYou = [
         aboutYou.trim(),
         selectedContextTags.length > 0 ? `Situation / Constraints: ${selectedContextTags.join(', ')}` : '',
@@ -321,7 +336,6 @@ export default function Page() {
       }
 
       let response: Response | null = null
-      let lastErr: Error | null = null
 
       for (const base of endpoints) {
         try {
@@ -331,8 +345,8 @@ export default function Page() {
             body: JSON.stringify(payload),
           })
           if (response.ok) break
-        } catch (e: any) {
-          lastErr = e
+        } catch {
+          // continue fallback
         }
       }
 
@@ -361,6 +375,7 @@ export default function Page() {
         analysis={analysis}
         resumeName={resumeData?.filename}
         learningStyle={learningStyle}
+        targetRole={targetRole}
         onReset={() => setAnalysis(null)}
       />
     )
@@ -395,7 +410,7 @@ export default function Page() {
             Know what to learn <span className="text-primary">next.</span>
           </h1>
           <p className="mt-5 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Tell the AI about your unique journey, upload your resume, or choose your skills. We craft a personalized roadmap matching your background, learning style, and available hours.
+            Tell the AI about your unique journey, upload your resume, and get an interactive modular roadmap, domain mind map, YouTube masterclasses, and active recall plan.
           </p>
 
           <div className="mt-8 flex items-center gap-4">
@@ -416,12 +431,12 @@ export default function Page() {
 
           <div className="mt-10 grid grid-cols-2 gap-4 border-t border-border pt-6">
             <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-              <p className="font-mono text-2xl font-semibold text-primary">100%</p>
-              <p className="mt-1 text-xs text-muted-foreground">Tailored to your learning style</p>
+              <p className="font-mono text-2xl font-semibold text-primary">Interactive</p>
+              <p className="mt-1 text-xs text-muted-foreground">Mind map, masterclasses & study plan</p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/40 p-4">
               <p className="font-mono text-2xl font-semibold text-primary">1-Click</p>
-              <p className="mt-1 text-xs text-muted-foreground">Resume & skill extraction</p>
+              <p className="mt-1 text-xs text-muted-foreground">Resume parser & auto-fill</p>
             </div>
           </div>
         </div>
@@ -451,7 +466,7 @@ export default function Page() {
           </div>
 
           <div className="space-y-6">
-            {/* 👤 NEW FEATURE: "About You" & Personal Context Section */}
+            {/* 👤 "About You" & Personal Context Section */}
             <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 sm:p-5">
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -503,7 +518,7 @@ export default function Page() {
               {/* Context / Situation Tags */}
               <div className="mt-4">
                 <label className="block mb-2 text-xs font-medium text-foreground">
-                  Your current situation / constraints (Select all that apply)
+                  Your current situation / constraints
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {CONTEXT_TAGS.map((tag) => {
@@ -698,7 +713,6 @@ export default function Page() {
               hint="Add custom skills or auto-populate from resume"
             >
               <div className="space-y-3">
-                {/* Custom Skill Input Bar */}
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -718,7 +732,6 @@ export default function Page() {
                   </button>
                 </div>
 
-                {/* Added Skills Tag List */}
                 {skills.length > 0 ? (
                   <div className="flex flex-wrap gap-2 rounded-xl border border-border/80 bg-secondary/20 p-3">
                     {skills.map((skill) => (
@@ -855,21 +868,41 @@ function Select({
   )
 }
 
+/* =========================================================================
+   RESULTS VIEW: TABBED SECTION SWITCHER NAVIGATION
+========================================================================= */
+
+type TabType = 'overview' | 'roadmap' | 'mindmap' | 'youtube' | 'schedule' | 'spaced' | 'resources'
+
 function Results({
   analysis,
   resumeName,
   learningStyle,
+  targetRole,
   onReset,
 }: {
   analysis: Analysis
   resumeName?: string
   learningStyle?: string
+  targetRole?: string
   onReset: () => void
 }) {
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
+
+  const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: string }[] = [
+    { id: 'overview', label: 'Overview & Gaps', icon: <LayoutDashboard size={15} /> },
+    { id: 'roadmap', label: 'Adaptive Roadmap', icon: <Layers size={15} />, badge: `${analysis.roadmap.length} Phases` },
+    { id: 'mindmap', label: 'Domain Mind Map', icon: <Network size={15} /> },
+    { id: 'youtube', label: 'YouTube Masterclasses', icon: <YouTubeIcon size={15} />, badge: `${analysis.youtube_masterclasses?.length || 0}` },
+    { id: 'schedule', label: 'Study Schedule', icon: <Calendar size={15} /> },
+    { id: 'spaced', label: 'Active Recall (5-Stage)', icon: <Repeat size={15} /> },
+    { id: 'resources', label: 'Docs & Resources', icon: <BookOpen size={15} /> },
+  ]
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
             <Compass size={19} />
@@ -886,14 +919,18 @@ function Results({
         </button>
       </header>
 
-      {/* Results Content */}
-      <section className="mx-auto max-w-6xl px-6 pb-20 pt-6">
-        {/* Top Intelligence Banner */}
-        <div className="mb-8 max-w-3xl">
+      {/* Hero Intelligence Header */}
+      <div className="bg-gradient-to-b from-primary/[0.04] to-transparent border-b border-border/30">
+        <section className="mx-auto max-w-6xl px-6 pt-8 pb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="font-mono text-xs uppercase tracking-[.18em] text-primary">
               Your Intelligence Brief
             </span>
+            {targetRole && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+                <Target size={12} /> Target: {targetRole}
+              </span>
+            )}
             {resumeName && (
               <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
                 <FileCheck size={12} /> Resume: {resumeName}
@@ -905,189 +942,312 @@ function Results({
               </span>
             )}
           </div>
-          <h1 className="text-3xl font-semibold tracking-[-0.05em] sm:text-4xl lg:text-5xl">
-            Your next move is mapped.
+          <h1 className="text-2xl font-semibold tracking-[-0.05em] sm:text-3xl lg:text-4xl">
+            Your personalized career pivot roadmap
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p className="mt-3 text-xs sm:text-sm leading-relaxed text-muted-foreground max-w-3xl">
             {analysis.summary}
           </p>
-        </div>
 
-        {/* Personalized Tip Banner (if present) */}
-        {analysis.personalized_tip && (
-          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 p-4 sm:p-5 flex items-start gap-3 shadow-lg shadow-primary/5">
-            <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0 mt-0.5">
-              <Lightbulb size={18} />
+          {/* Personalized Tip */}
+          {analysis.personalized_tip && (
+            <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3.5 sm:p-4 flex items-start gap-3 shadow-lg shadow-primary/5">
+              <div className="p-1.5 rounded-lg bg-primary/20 text-primary shrink-0 mt-0.5">
+                <Lightbulb size={16} />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-primary">Tailored Advisor Note For You</h3>
+                <p className="mt-0.5 text-xs text-foreground/90 leading-relaxed">
+                  {analysis.personalized_tip}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-primary">Tailored Advisor Tip For You</h3>
-              <p className="mt-1 text-xs sm:text-sm text-foreground/90 leading-relaxed">
-                {analysis.personalized_tip}
-              </p>
+          )}
+
+          {/* 🔘 TOP SECTION SWITCHER (TABS BAR) */}
+          <div className="mt-8 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]'
+                      : 'border border-border/80 bg-card/60 text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                  {tab.badge && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 font-mono text-[10px] ${
+                        isActive
+                          ? 'bg-primary-foreground/20 text-primary-foreground'
+                          : 'bg-secondary text-muted-foreground'
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      </div>
+
+      {/* Main Tab Viewport */}
+      <section className="mx-auto max-w-6xl px-6 py-8">
+        {/* =========================================================================
+            TAB 1: OVERVIEW & READINESS & PRIORITY GAPS
+        ========================================================================= */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-[.85fr_1.15fr]">
+              {/* Readiness Score Card */}
+              <div className="flex flex-col justify-between rounded-2xl border border-primary/30 bg-primary/10 p-6 shadow-xl shadow-primary/5">
+                <div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                        Role Readiness Index
+                      </p>
+                      <div className="mt-3 flex items-baseline gap-1">
+                        <span className="font-mono text-6xl font-bold text-primary">
+                          {analysis.readiness_score}
+                        </span>
+                        <span className="text-2xl font-bold text-primary">%</span>
+                      </div>
+                    </div>
+                    <div className="rounded-full bg-primary/20 p-2.5 text-primary">
+                      <TrendingUp size={22} />
+                    </div>
+                  </div>
+
+                  {/* Resume strengths if available */}
+                  {analysis.resume_strengths && analysis.resume_strengths.length > 0 && (
+                    <div className="mt-6 rounded-lg bg-background/50 border border-primary/20 p-3.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-2">
+                        <Award size={14} /> Resume Strengths Identified
+                      </div>
+                      <ul className="space-y-1.5 text-xs text-muted-foreground">
+                        {analysis.resume_strengths.map((strength, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="text-primary font-bold">•</span>
+                            <span>{strength}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 border-t border-primary/20 pt-4">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
+                    Immediate Action Item
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed font-medium text-foreground">
+                    {analysis.start_here}
+                  </p>
+                </div>
+              </div>
+
+              {/* Priority Skill Gaps */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="text-primary" size={20} />
+                    <h2 className="font-semibold text-base">Priority Skill Gaps to Close</h2>
+                  </div>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {analysis.missing_skills.length} Target Gaps
+                  </span>
+                </div>
+
+                <div className="space-y-3.5">
+                  {analysis.missing_skills.map((gap) => (
+                    <div
+                      key={gap.skill}
+                      className="rounded-lg border border-border/80 bg-secondary/30 p-3.5 transition-colors hover:border-primary/40"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-foreground">{gap.skill}</h3>
+                        <span
+                          className={`font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                            gap.priority.toLowerCase() === 'critical'
+                              ? 'bg-destructive/15 text-destructive border border-destructive/30'
+                              : gap.priority.toLowerCase() === 'high'
+                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                              : 'bg-primary/15 text-primary border border-primary/30'
+                          }`}
+                        >
+                          {gap.priority}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                        <span className="text-foreground/90 font-medium">{gap.gap}</span> — {gap.why}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Readiness Score & Priority Gaps */}
-        <div className="grid gap-6 md:grid-cols-[.85fr_1.15fr]">
-          {/* Readiness Score Card */}
-          <div className="flex flex-col justify-between rounded-2xl border border-primary/30 bg-primary/10 p-6 shadow-xl shadow-primary/5">
-            <div>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                    Role Readiness Index
-                  </p>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="font-mono text-6xl font-bold text-primary">
-                      {analysis.readiness_score}
-                    </span>
-                    <span className="text-2xl font-bold text-primary">%</span>
+        {/* =========================================================================
+            TAB 2: ADAPTIVE ROADMAP
+        ========================================================================= */}
+        {activeTab === 'roadmap' && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Layers className="text-primary" size={20} />
+                <h2 className="font-semibold text-lg">Multi-Phase Structured Curriculum</h2>
+              </div>
+              <span className="font-mono text-xs text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                Sequence for your hours & timeline
+              </span>
+            </div>
+
+            <div className="space-y-5">
+              {analysis.roadmap.map((phase, index) => (
+                <div key={phase.phase} className="flex gap-4 sm:gap-6">
+                  <div className="flex flex-col items-center">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20">
+                      {index + 1}
+                    </div>
+                    {index < analysis.roadmap.length - 1 && (
+                      <div className="w-0.5 flex-1 bg-border/80 my-2" />
+                    )}
+                  </div>
+                  <div className="rounded-xl border border-border/80 bg-secondary/20 p-5 w-full">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-mono uppercase tracking-wider text-primary font-semibold">
+                        {phase.phase}
+                      </p>
+                      <span className="text-[11px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                        Phase {index + 1} of {analysis.roadmap.length}
+                      </span>
+                    </div>
+                    <h3 className="mt-1.5 text-base font-semibold text-foreground">{phase.focus}</h3>
+                    <div className="mt-3 rounded-lg border border-border/60 bg-background/50 p-3">
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-semibold text-foreground">Target Milestone Outcome:</span>{' '}
+                        {phase.outcome}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="rounded-full bg-primary/20 p-2.5 text-primary">
-                  <TrendingUp size={22} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 3: INTERACTIVE DOMAIN MIND MAP
+        ========================================================================= */}
+        {activeTab === 'mindmap' && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
+                    <Network size={20} />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base">Domain Competency Mind Map</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Hierarchical view of skills, architecture, and production readiness
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-0.5 text-primary">
+                    ● Foundation
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 text-amber-400">
+                    ● Gaps
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-2 py-0.5 text-blue-400">
+                    ● Production
+                  </span>
                 </div>
               </div>
 
-              {/* Resume strengths if available */}
-              {analysis.resume_strengths && analysis.resume_strengths.length > 0 && (
-                <div className="mt-6 rounded-lg bg-background/50 border border-primary/20 p-3.5">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-2">
-                    <Award size={14} /> Resume Strengths Identified
-                  </div>
-                  <ul className="space-y-1.5 text-xs text-muted-foreground">
-                    {analysis.resume_strengths.map((strength, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-primary font-bold">•</span>
-                        <span>{strength}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+              {/* Pillars Grid */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {(analysis.mind_map?.pillars || [
+                  {
+                    category: 'Foundational Tools',
+                    skills: [
+                      { name: 'Core Syntax & Basics', type: 'verified_strength', description: 'Fundamental programming constructs, data structures, and standard libraries.' },
+                      { name: 'Version Control & CLI', type: 'verified_strength', description: 'Git branch workflows, terminal fluency, and environment configs.' },
+                    ],
+                  },
+                  {
+                    category: 'Domain Architecture',
+                    skills: [
+                      { name: 'System Design Patterns', type: 'core_competency', description: 'Component separation, modular architecture, and service boundaries.' },
+                      { name: 'Data Pipeline & Schemas', type: 'core_competency', description: 'Relational & NoSQL data models and schema optimization.' },
+                    ],
+                  },
+                  {
+                    category: 'Critical Gaps',
+                    skills: analysis.missing_skills.slice(0, 3).map((g) => ({
+                      name: g.skill,
+                      type: 'urgent_priority',
+                      description: g.gap,
+                    })),
+                  },
+                  {
+                    category: 'Production & System Design',
+                    skills: [
+                      { name: 'Scalability & Caching', type: 'production_scale', description: 'Latency reduction, Redis caching, and rate limiting.' },
+                      { name: 'CI/CD & Deployment', type: 'production_scale', description: 'Automated testing suites and containerized cloud deployment.' },
+                    ],
+                  },
+                ]).map((pillar, idx) => (
+                  <div
+                    key={pillar.category}
+                    className="flex flex-col rounded-xl border border-border/80 bg-secondary/20 p-4 transition-all hover:border-primary/50"
+                  >
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/60">
+                      <span className="font-mono text-xs font-bold text-primary">0{idx + 1}</span>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                        {pillar.category}
+                      </h3>
+                    </div>
 
-            <div className="mt-6 border-t border-primary/20 pt-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
-                Immediate Action Item
-              </p>
-              <p className="mt-1.5 text-sm leading-relaxed font-medium text-foreground">
-                {analysis.start_here}
-              </p>
+                    <div className="space-y-2.5 flex-1">
+                      {pillar.skills.map((skill, sIdx) => (
+                        <div
+                          key={sIdx}
+                          className="rounded-lg border border-border/70 bg-background/60 p-3 transition-colors hover:border-primary/40"
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-xs font-semibold text-foreground">{skill.name}</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            {skill.description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Priority Skill Gaps */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="text-primary" size={20} />
-              <h2 className="font-semibold text-base">Priority Skill Gaps to Close</h2>
-            </div>
-
-            <div className="space-y-3.5">
-              {analysis.missing_skills.map((gap) => (
-                <div
-                  key={gap.skill}
-                  className="rounded-lg border border-border/80 bg-secondary/30 p-3.5 transition-colors hover:border-primary/40"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-foreground">{gap.skill}</h3>
-                    <span
-                      className={`font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                        gap.priority.toLowerCase() === 'critical'
-                          ? 'bg-destructive/15 text-destructive border border-destructive/30'
-                          : gap.priority.toLowerCase() === 'high'
-                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                          : 'bg-primary/15 text-primary border border-primary/30'
-                      }`}
-                    >
-                      {gap.priority}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                    <span className="text-foreground/90 font-medium">{gap.gap}</span> — {gap.why}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Learning Roadmap & Curated Resources */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
-          {/* Roadmap Sequence */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
-            <div className="flex items-center gap-2 mb-5">
-              <Layers className="text-primary" size={20} />
-              <h2 className="font-semibold text-base">Your Step-by-Step Learning Sequence</h2>
-            </div>
-
-            <div className="space-y-4">
-              {analysis.roadmap.map((phase, index) => (
-                <div key={phase.phase} className="flex gap-4">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 font-mono text-xs font-bold text-primary border border-primary/30">
-                    {index + 1}
-                  </div>
-                  <div className="rounded-xl border border-border/70 bg-secondary/20 p-4 w-full">
-                    <p className="text-[11px] font-mono uppercase tracking-wider text-primary font-semibold">
-                      {phase.phase}
-                    </p>
-                    <h3 className="mt-1 text-sm font-semibold text-foreground">{phase.focus}</h3>
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                      <span className="font-medium text-foreground/80">Target Milestone:</span>{' '}
-                      {phase.outcome}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Curated Resources */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
-            <div className="flex items-center gap-2 mb-5">
-              <BookOpen className="text-primary" size={20} />
-              <h2 className="font-semibold text-base">Recommended Resources ({learningStyle || 'Personalized'})</h2>
-            </div>
-
-            <div className="space-y-3.5">
-              {analysis.resources.map((resource) => (
-                <a
-                  href={resource.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  key={resource.title}
-                  className="group block rounded-xl border border-border bg-secondary/20 p-4 transition-all hover:border-primary/60 hover:bg-secondary/40"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {resource.title}
-                    </h3>
-                    <ArrowRight
-                      size={14}
-                      className="shrink-0 text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all mt-0.5"
-                    />
-                  </div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="font-medium text-foreground">{resource.provider}</span>
-                    <span>•</span>
-                    <span className="capitalize">{resource.type}</span>
-                    <span>•</span>
-                    <span>{resource.level}</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    {resource.why}
-                  </p>
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 📺 Embedded YouTube Masterclasses Section */}
-        {analysis.youtube_masterclasses && analysis.youtube_masterclasses.length > 0 && (
-          <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-xl">
+        {/* =========================================================================
+            TAB 4: YOUTUBE MASTERCLASSES
+        ========================================================================= */}
+        {activeTab === 'youtube' && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-2.5">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
@@ -1101,64 +1261,312 @@ function Results({
                 </div>
               </div>
               <span className="font-mono text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full flex items-center gap-1.5">
-                <PlayCircle size={13} /> {analysis.youtube_masterclasses.length} Masterclasses Picked
+                <PlayCircle size={13} /> {analysis.youtube_masterclasses?.length || 0} Masterclasses Picked
               </span>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {analysis.youtube_masterclasses.map((video, idx) => {
-                const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
-                  video.search_query || `${video.title} ${video.channel}`
-                )}`
+            {analysis.youtube_masterclasses && analysis.youtube_masterclasses.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {analysis.youtube_masterclasses.map((video, idx) => {
+                  const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
+                    video.search_query || `${video.title} ${video.channel}`
+                  )}`
 
-                return (
-                  <div
-                    key={idx}
-                    className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-secondary/20 p-4 transition-all hover:border-red-500/50 hover:bg-secondary/35"
-                  >
-                    <div>
-                      {/* Top Channel & Duration */}
-                      <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <span className="inline-flex items-center gap-1 rounded bg-red-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-red-400 border border-red-500/25">
-                          {video.channel}
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground">
-                          <Clock size={11} /> {video.duration}
-                        </span>
+                  return (
+                    <div
+                      key={idx}
+                      className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-secondary/20 p-4 transition-all hover:border-red-500/50 hover:bg-secondary/35"
+                    >
+                      <div>
+                        {/* Top Channel & Duration */}
+                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                          <span className="inline-flex items-center gap-1 rounded bg-red-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-red-400 border border-red-500/25">
+                            {video.channel}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground">
+                            <Clock size={11} /> {video.duration}
+                          </span>
+                        </div>
+
+                        {/* Video Title */}
+                        <h3 className="text-sm font-semibold text-foreground group-hover:text-red-400 transition-colors line-clamp-2">
+                          {video.title}
+                        </h3>
+
+                        {/* Focus Tag */}
+                        <div className="mt-2 mb-2">
+                          <span className="inline-block rounded border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wider">
+                            🎯 {video.focus_topic}
+                          </span>
+                        </div>
+
+                        {/* Why it was chosen */}
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                          {video.why}
+                        </p>
                       </div>
 
-                      {/* Video Title */}
-                      <h3 className="text-sm font-semibold text-foreground group-hover:text-red-400 transition-colors line-clamp-2">
-                        {video.title}
-                      </h3>
-
-                      {/* Focus Tag */}
-                      <div className="mt-2 mb-2">
-                        <span className="inline-block rounded border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wider">
-                          🎯 {video.focus_topic}
-                        </span>
+                      {/* Action Button */}
+                      <div className="mt-4 pt-3 border-t border-border/60">
+                        <a
+                          href={searchUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-500/15 py-2 text-xs font-semibold text-red-400 border border-red-500/30 transition-all hover:bg-red-500 hover:text-white"
+                        >
+                          <PlayCircle size={14} /> Watch on YouTube <ExternalLink size={12} />
+                        </a>
                       </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-xs text-muted-foreground py-8">
+                No YouTube videos were requested for this run.
+              </p>
+            )}
+          </div>
+        )}
 
-                      {/* Why it was chosen */}
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                        {video.why}
+        {/* =========================================================================
+            TAB 5: SMART TIME-OPTIMIZED STUDY PLAN
+        ========================================================================= */}
+        {activeTab === 'schedule' && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-base">Smart Time-Optimized Study Schedule</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Actionable sessions mapped to your weekly commitment
+                  </p>
+                </div>
+              </div>
+              {analysis.study_plan?.weekly_hours_allocated && (
+                <span className="font-mono text-xs text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                  ⏱️ {analysis.study_plan.weekly_hours_allocated}
+                </span>
+              )}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {(analysis.study_plan?.schedule || [
+                {
+                  day: 'Mon / Tue',
+                  session_type: 'Deep Dive Concept',
+                  duration: '1.5 hrs',
+                  focus: 'Core Theory & Architecture Study',
+                  actionable_deliverable: 'Read docs, diagram data flows, write 1 summary page.',
+                },
+                {
+                  day: 'Wed / Thu',
+                  session_type: 'Hands-On Lab / Coding',
+                  duration: '2.0 hrs',
+                  focus: 'Blank-Screen Implementation',
+                  actionable_deliverable: 'Build isolated endpoint or component from scratch.',
+                },
+                {
+                  day: 'Saturday',
+                  session_type: 'Capstone Architecture',
+                  duration: '2.5 hrs',
+                  focus: 'Portfolio Feature Integration',
+                  actionable_deliverable: 'Commit working feature branch to GitHub repository.',
+                },
+                {
+                  day: 'Sunday',
+                  session_type: 'Active Audit & Review',
+                  duration: '1.0 hr',
+                  focus: 'Spaced Recall & Feynman Check',
+                  actionable_deliverable: 'Explain concept aloud without notes; patch weak spots.',
+                },
+              ]).map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col justify-between rounded-xl border border-border/80 bg-secondary/20 p-4 transition-all hover:border-primary/40"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-xs font-bold text-primary">{item.day}</span>
+                      <span className="font-mono text-[11px] text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                        {item.duration}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-1">
+                      {item.session_type}
+                    </h3>
+
+                    <p className="text-xs font-medium text-foreground/90 mt-2">{item.focus}</p>
+
+                    <div className="mt-3 rounded-lg border border-border/60 bg-background/50 p-2.5">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        <span className="font-semibold text-primary">Deliverable:</span>{' '}
+                        {item.actionable_deliverable}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {analysis.study_plan?.pro_tip && (
+              <div className="mt-6 rounded-xl border border-primary/25 bg-primary/5 p-4 flex items-center gap-3">
+                <Lightbulb size={18} className="text-primary shrink-0" />
+                <p className="text-xs text-foreground/90 leading-relaxed">
+                  <span className="font-semibold text-primary">Efficiency Tip:</span>{' '}
+                  {analysis.study_plan.pro_tip}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 6: SPACED REPETITION & ACTIVE RECALL (5-STAGE)
+        ========================================================================= */}
+        {activeTab === 'spaced' && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
+                  <Repeat size={20} />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-base">5-Stage Spaced Repetition & Active Recall</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Feynman technique & blank-screen coding framework (Day 1, 3, 7, 14, 30)
+                  </p>
+                </div>
+              </div>
+              <span className="font-mono text-xs text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                For Long-Term Neural Retention
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {(analysis.spaced_repetition?.framework || [
+                {
+                  stage: 'Day 1 (Immediate Encode)',
+                  technique: 'Feynman Technique & Plain Language Explanation',
+                  feynman_prompt: 'Explain how this core skill works to a 10-year-old without using technical jargon.',
+                  blank_screen_challenge: 'Create a blank file and write the skeleton syntax without checking documentation.',
+                },
+                {
+                  stage: 'Day 3 (First Recall)',
+                  technique: 'Blind Reconstruction & Flow Mapping',
+                  feynman_prompt: 'What are the 3 most common trade-offs when choosing this architecture over alternatives?',
+                  blank_screen_challenge: 'Build a minimal end-to-end working prototype from memory in under 20 minutes.',
+                },
+                {
+                  stage: 'Day 7 (Structural Mastery)',
+                  technique: 'Error Injection & Edge-Case Debugging',
+                  feynman_prompt: 'Where will this system fail under 10x traffic? Describe the failure cascade.',
+                  blank_screen_challenge: 'Write unit tests covering 3 failure modes and make them pass.',
+                },
+                {
+                  stage: 'Day 14 (Blind Implementation)',
+                  technique: 'Cross-Domain Project Integration',
+                  feynman_prompt: 'How does this technology integrate with databases, authentication, and caching layers?',
+                  blank_screen_challenge: 'Integrate this skill into your primary portfolio project without copy-pasting.',
+                },
+                {
+                  stage: 'Day 30 (Interview & Production Audit)',
+                  technique: 'Mock System Design & Production Readiness',
+                  feynman_prompt: 'Explain the internal lifecycle, performance bottlenecks, and security considerations to a Lead Architect.',
+                  blank_screen_challenge: 'Refactor production code for benchmark speed, clean documentation, and CI/CD tests.',
+                },
+              ]).map((stage, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-border/80 bg-secondary/20 p-4 sm:p-5 transition-colors hover:border-primary/40"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <span className="font-mono text-xs font-bold text-primary uppercase tracking-wider">
+                      {stage.stage}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                      {stage.technique}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
+                        <BrainCircuit size={14} /> Feynman Recall Prompt
+                      </div>
+                      <p className="text-xs text-foreground/90 leading-relaxed">
+                        {stage.feynman_prompt}
                       </p>
                     </div>
 
-                    {/* Action Button */}
-                    <div className="mt-4 pt-3 border-t border-border/60">
-                      <a
-                        href={searchUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-500/15 py-2 text-xs font-semibold text-red-400 border border-red-500/30 transition-all hover:bg-red-500 hover:text-white"
-                      >
-                        <PlayCircle size={14} /> Watch on YouTube <ExternalLink size={12} />
-                      </a>
+                    <div className="rounded-lg border border-border bg-background/50 p-3.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground mb-1">
+                        <Code2 size={14} /> Blank-Screen Challenge
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {stage.blank_screen_challenge}
+                      </p>
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 7: CURATED DOCS & RESOURCES
+        ========================================================================= */}
+        {activeTab === 'resources' && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <BookOpen className="text-primary" size={20} />
+                <h2 className="font-semibold text-base">
+                  Recommended Documentation & Courses ({learningStyle || 'Personalized'})
+                </h2>
+              </div>
+              <span className="text-xs font-mono text-muted-foreground">
+                {analysis.resources.length} Curated Links
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {analysis.resources.map((resource) => (
+                <a
+                  href={resource.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  key={resource.title}
+                  className="group flex flex-col justify-between rounded-xl border border-border bg-secondary/20 p-4 transition-all hover:border-primary/60 hover:bg-secondary/40"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {resource.title}
+                      </h3>
+                      <ArrowRight
+                        size={14}
+                        className="shrink-0 text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all mt-0.5"
+                      />
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground">{resource.provider}</span>
+                      <span>•</span>
+                      <span className="capitalize">{resource.type}</span>
+                      <span>•</span>
+                      <span>{resource.level}</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      {resource.why}
+                    </p>
+                  </div>
+                </a>
+              ))}
             </div>
           </div>
         )}
