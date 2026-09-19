@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   ArrowRight,
   Check,
+  CheckCircle2,
   CircleAlert,
   CircleCheck,
   CircleHelp,
