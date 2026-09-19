@@ -325,112 +325,142 @@ Preferred Learning Style & Format:
 "{profile.learning_style}"
 """
 
-    prompt = f'''You are a world-class empathetic career intelligence advisor and technical mentor. Analyze this learner profile against the current 2026 job market. Return ONLY valid JSON, no markdown fences. Never invent specific course URLs; use official or widely known URLs only and set url to https://www.google.com/search?q=... when uncertain.
-
-Learner Profile:
-- Target Role: {profile.target_role}
-- Current Role / Background: {profile.current_role}
-- Known Skills: {", ".join(profile.known_skills)}
-- Skill Level: {profile.skill_level}
-- Learning Goal: {profile.learning_goal}
-- Weekly Time: {profile.weekly_hours}
-- Timeline: {profile.timeline}
-
-{about_you_section}
-
-{resume_instruction}
-
-Special Instructions:
-- Carefully tailor the advice, tone, and recommended resources to their "About You" personal context, current commitments, and their preferred learning style (e.g., if hands-on project based vs. video courses vs. documentation).
-- In the "summary", acknowledge their background story and uniquely encourage their strengths.
-
-Return this exact shape:
-{{
-  "readiness_score": number (0-100),
-  "summary": string,
-  "start_here": string,
-  "resume_strengths": [string],
-  "personalized_tip": string,
+    schema_instruction = """
+Return ONLY valid JSON with this exact schema:
+{
+  "readiness_score": 75,
+  "summary": "Detailed strategic career intelligence summary...",
+  "start_here": "Immediate high-leverage action item to begin today...",
+  "resume_strengths": ["Strengths found in your background/resume"],
+  "personalized_tip": "Specific advisor tip based on your learning style and constraints",
   "missing_skills": [
-    {{
-      "skill": string,
-      "priority": "critical" | "high" | "medium",
-      "gap": string,
-      "why": string
-    }}
+    {
+      "skill": "Skill Name",
+      "priority": "critical",
+      "gap": "Why this is a gap",
+      "why": "Why 2026 employers demand this"
+    }
   ],
   "roadmap": [
-    {{
-      "phase": string,
-      "focus": string,
-      "outcome": string
-    }}
+    {
+      "phase": "Phase 1: Foundations",
+      "focus": "Core Architecture",
+      "outcome": "Measurable deliverable and milestone"
+    }
   ],
   "resources": [
-    {{
-      "title": string,
-      "provider": string,
-      "type": "course" | "docs" | "project" | "community",
-      "level": string,
-      "url": string,
-      "why": string
-    }}
+    {
+      "title": "Course or Documentation Name",
+      "provider": "Official / Provider",
+      "type": "course",
+      "level": "Intermediate",
+      "url": "https://...",
+      "why": "Why this resource is optimal"
+    }
   ],
   "youtube_masterclasses": [
-    {{
-      "title": string,
-      "channel": "freeCodeCamp.org" | "StatQuest" | "3Blue1Brown" | "Fireship" | "NeetCode" | "Traversy Media" | "Krish Naik" | "Corey Schafer" | "Andrej Karpathy" | string,
-      "duration": string,
-      "search_query": string,
-      "focus_topic": string,
-      "why": string
-    }}
+    {
+      "title": "Masterclass Video Title",
+      "channel": "freeCodeCamp.org",
+      "duration": "2h 30m",
+      "search_query": "specific search query",
+      "focus_topic": "Topic Name",
+      "why": "Why this video walkthrough is effective"
+    }
   ],
   "mind_map": {
     "pillars": [
-      {{
+      {
         "category": "Foundational Tools",
-        "skills": [{{ "name": string, "type": "verified_strength" | "bridge_skill", "description": string }}]
-      }},
-      {{
+        "skills": [{ "name": "Skill Name", "type": "verified_strength", "description": "Short explanation" }]
+      },
+      {
         "category": "Domain Architecture",
-        "skills": [{{ "name": string, "type": "core_competency", "description": string }}]
-      }},
-      {{
+        "skills": [{ "name": "Skill Name", "type": "core_competency", "description": "Short explanation" }]
+      },
+      {
         "category": "Critical Gaps",
-        "skills": [{{ "name": string, "type": "urgent_priority", "description": string }}]
-      }},
-      {{
+        "skills": [{ "name": "Skill Name", "type": "urgent_priority", "description": "Short explanation" }]
+      },
+      {
         "category": "Production & System Design",
-        "skills": [{{ "name": string, "type": "production_scale", "description": string }}]
-      }}
+        "skills": [{ "name": "Skill Name", "type": "production_scale", "description": "Short explanation" }]
+      }
     ]
   },
   "study_plan": {
-    "weekly_hours_allocated": string,
+    "weekly_hours_allocated": "5-7 hrs/week",
     "schedule": [
-      {{
-        "day": string,
-        "session_type": "Deep Dive Concept" | "Hands-On Lab / Coding" | "Capstone Architecture" | "Active Audit & Review",
-        "duration": string,
-        "focus": string,
-        "actionable_deliverable": string
-      }}
+      {
+        "day": "Mon / Tue",
+        "session_type": "Deep Dive Concept",
+        "duration": "1.5 hrs",
+        "focus": "Core Theory",
+        "actionable_deliverable": "Specific task completed"
+      }
     ],
-    "pro_tip": string
+    "pro_tip": "Time optimization tip"
   },
   "spaced_repetition": {
     "framework": [
-      {{
-        "stage": "Day 1 (Immediate Encode)" | "Day 3 (First Recall)" | "Day 7 (Structural Mastery)" | "Day 14 (Blind Implementation)" | "Day 30 (Interview & Production Audit)",
-        "technique": string,
-        "feynman_prompt": string,
-        "blank_screen_challenge": string
-      }}
+      {
+        "stage": "Day 1 (Immediate Encode)",
+        "technique": "Feynman Technique",
+        "feynman_prompt": "Explain concept simply...",
+        "blank_screen_challenge": "Build syntax from memory..."
+      },
+      {
+        "stage": "Day 3 (First Recall)",
+        "technique": "Blind Reconstruction",
+        "feynman_prompt": "Explain 3 trade-offs...",
+        "blank_screen_challenge": "Build minimal prototype..."
+      },
+      {
+        "stage": "Day 7 (Structural Mastery)",
+        "technique": "Edge Case Debugging",
+        "feynman_prompt": "Where will this fail under traffic?...",
+        "blank_screen_challenge": "Write 3 unit tests..."
+      },
+      {
+        "stage": "Day 14 (Blind Implementation)",
+        "technique": "Project Integration",
+        "feynman_prompt": "How does it connect to other layers?...",
+        "blank_screen_challenge": "Integrate into portfolio project..."
+      },
+      {
+        "stage": "Day 30 (Interview & Production Audit)",
+        "technique": "Mock System Design",
+        "feynman_prompt": "Explain lifecycle and security...",
+        "blank_screen_challenge": "Refactor for speed and tests..."
+      }
     ]
   }
-}}
-Include 4-6 skill gaps, 3-4 roadmap phases, 5 standard resources, 3-4 top YouTube masterclasses, a 4-pillar domain mind map, a personalized weekly study plan matching their hours, and the 5-stage spaced repetition active recall framework.'''
+}
+"""
+
+    skills_joined = ", ".join(profile.known_skills)
+    prompt = (
+        "You are a world-class empathetic career intelligence advisor and technical recruiter. "
+        "Analyze this learner profile against the current 2026 job market. "
+        "Return ONLY valid JSON, no markdown fences. Never invent specific course URLs; use official or widely known URLs only.\n\n"
+        f"Learner Profile:\n"
+        f"- Target Role: {profile.target_role}\n"
+        f"- Current Role / Background: {profile.current_role}\n"
+        f"- Known Skills: {skills_joined}\n"
+        f"- Skill Level: {profile.skill_level}\n"
+        f"- Learning Goal: {profile.learning_goal}\n"
+        f"- Weekly Time: {profile.weekly_hours}\n"
+        f"- Timeline: {profile.timeline}\n\n"
+        f"{about_you_section}\n\n"
+        f"{resume_instruction}\n\n"
+        "Special Instructions:\n"
+        "- Tailor the advice, tone, and recommended resources to their personal context, current commitments, and learning style.\n"
+        "- In the summary, acknowledge their background story and uniquely encourage their strengths.\n"
+        "- Include 4-6 skill gaps (with critical/high/medium priorities), 3-4 roadmap phases, 5 standard resources, "
+        "3-4 top YouTube masterclasses, a 4-pillar domain mind map, a personalized weekly study plan matching their hours, "
+        "and the 5-stage spaced repetition active recall framework.\n\n"
+        f"{schema_instruction}"
+    )
 
     try:
         response = model.generate_content(
