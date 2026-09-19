@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useRef, DragEvent, ChangeEvent } from 'react'
+import { useMemo, useState, useEffect, useRef, DragEvent, ChangeEvent } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -779,18 +779,28 @@ export default function Page() {
             {/* Proficiency & Weekly Time */}
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="How would you rate yourself?">
-                <Select
+                <CustomDropdown
                   value={skillLevel}
                   onChange={setSkillLevel}
-                  options={['Beginner', 'Working knowledge', 'Confident', 'Advanced']}
+                  options={[
+                    { label: 'Beginner', value: 'Beginner', hint: 'Learning syntax & foundational principles' },
+                    { label: 'Working knowledge', value: 'Working knowledge', hint: 'Can build functional features & components' },
+                    { label: 'Confident', value: 'Confident', hint: 'Independent debugging & problem solving' },
+                    { label: 'Advanced', value: 'Advanced', hint: 'System design, scale & architecture mastery' },
+                  ]}
                 />
               </Field>
 
               <Field label="Time available each week">
-                <Select
+                <CustomDropdown
                   value={hours}
                   onChange={setHours}
-                  options={['1–3 hours', '5–7 hours', '8–12 hours', '12+ hours']}
+                  options={[
+                    { label: '1–3 hours', value: '1–3 hours', hint: 'Casual exploratory pace' },
+                    { label: '5–7 hours', value: '5–7 hours', hint: 'Balanced & steady progress (Recommended)' },
+                    { label: '8–12 hours', value: '8–12 hours', hint: 'Accelerated career transition sprint' },
+                    { label: '12+ hours', value: '12+ hours', hint: 'Full-time immersion commitment' },
+                  ]}
                 />
               </Field>
             </div>
@@ -806,10 +816,15 @@ export default function Page() {
             </Field>
 
             <Field label="Your target timeline">
-              <Select
+              <CustomDropdown
                 value={timeline}
                 onChange={setTimeline}
-                options={['1–3 months', '3–6 months', '6–12 months', 'Exploring']}
+                options={[
+                  { label: '1–3 months', value: '1–3 months', hint: 'Fast-track interview readiness' },
+                  { label: '3–6 months', value: '3–6 months', hint: 'Optimal deep-mastery & portfolio window' },
+                  { label: '6–12 months', value: '6–12 months', hint: 'Comprehensive structured transition' },
+                  { label: 'Exploring', value: 'Exploring', hint: 'Auditing gaps & tech landscape' },
+                ]}
               />
             </Field>
 
@@ -862,25 +877,113 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   )
 }
 
-function Select({
+type DropdownOption = {
+  label: string
+  value: string
+  hint?: string
+}
+
+function CustomDropdown({
   value,
   onChange,
   options,
 }: {
   value: string
   onChange: (value: string) => void
-  options: string[]
+  options: (string | DropdownOption)[]
 }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const normalizedOptions: DropdownOption[] = options.map((opt) =>
+    typeof opt === 'string' ? { label: opt, value: opt } : opt
+  )
+
+  const selectedOption = normalizedOptions.find((opt) => opt.value === value) || normalizedOptions[0]
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsOpen(false)
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
   return (
-    <div className="relative">
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-3.5 text-muted-foreground" size={16} />
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left text-xs sm:text-sm transition-all duration-150 ${
+          isOpen
+            ? 'border-primary ring-2 ring-primary/20 shadow-lg shadow-primary/5 bg-secondary/50 text-foreground'
+            : 'border-border/80 bg-secondary/30 text-foreground hover:border-primary/50 hover:bg-secondary/45'
+        }`}
+      >
+        <span className="font-medium truncate">{selectedOption?.label || value}</span>
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-muted-foreground transition-transform duration-200 ml-2 ${
+            isOpen ? 'rotate-180 text-primary' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          className="absolute z-50 mt-1.5 w-full rounded-xl border border-border/90 bg-card/98 p-1.5 shadow-2xl backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100"
+        >
+          <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+            {normalizedOptions.map((option) => {
+              const isSelected = option.value === value
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onChange(option.value)
+                    setIsOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-all ${
+                    isSelected
+                      ? 'bg-primary/15 font-semibold text-primary'
+                      : 'text-foreground hover:bg-secondary/70 hover:text-foreground'
+                  }`}
+                >
+                  <div className="pr-2">
+                    <p className={`font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                      {option.label}
+                    </p>
+                    {option.hint && (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground leading-tight">
+                        {option.hint}
+                      </p>
+                    )}
+                  </div>
+                  {isSelected && <Check size={14} className="shrink-0 text-primary" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
