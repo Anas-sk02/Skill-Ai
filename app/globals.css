@@ -61,6 +61,22 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
 select { appearance: none; padding-right: 2.5rem; }
 textarea { resize: vertical; min-height: 92px; }
 
+/* Mobile Touch & Scrollbar Polish */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.touch-pan-canvas {
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Clean PDF Export / Print Stylesheet */
 @media print {
   body {

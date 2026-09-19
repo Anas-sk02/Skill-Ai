@@ -410,29 +410,33 @@ export default function Page() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Universal Top Header */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Compass size={19} />
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-border/40">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <Compass size={18} />
           </div>
-          <span className="font-mono text-base font-semibold tracking-tight">
+          <span className="font-mono text-sm sm:text-base font-semibold tracking-tight">
             skillgap<span className="text-primary">.ai</span>
           </span>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2">
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-lg bg-primary/15 border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-lg bg-primary/15 border border-primary/40 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-primary shadow-sm"
           >
-            <Layers size={13} /> Career Pivot Roadmap
+            <Layers size={13} />
+            <span className="hidden sm:inline">Career Pivot Roadmap</span>
+            <span className="sm:hidden">Roadmap</span>
           </Link>
           <Link
             href="/job-match"
-            className="flex items-center gap-1.5 rounded-lg border border-border/70 px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-lg border border-border/70 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
           >
-            <Zap size={13} /> Live Job Match & Diff Engine
+            <Zap size={13} />
+            <span className="hidden sm:inline">Live Job Match & ATS Diff</span>
+            <span className="sm:hidden">Job Match</span>
             <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[9px] font-bold">
               NEW
             </span>
@@ -441,7 +445,7 @@ export default function Page() {
       </header>
 
       {/* Main Container */}
-      <section className="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-4 lg:grid-cols-[.85fr_1.15fr] lg:items-start lg:pt-8">
+      <section className="mx-auto grid max-w-6xl gap-8 lg:gap-12 px-4 sm:px-6 pb-20 pt-3 lg:grid-cols-[.85fr_1.15fr] lg:items-start lg:pt-8">
         {/* Left Column: Hero & Insights */}
         <div className="lg:sticky lg:top-10">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary">
@@ -1036,10 +1040,17 @@ function InteractiveMindMap({
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const canvasRef = useRef<HTMLDivElement>(null)
 
+  // Auto-scale on mobile screens
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setZoomLevel(80)
+    }
+  }, [])
+
   const handleZoomIn = () => setZoomLevel((z) => Math.min(140, z + 10))
-  const handleZoomOut = () => setZoomLevel((z) => Math.max(60, z - 10))
+  const handleZoomOut = () => setZoomLevel((z) => Math.max(50, z - 10))
   const handleResetCanvas = () => {
-    setZoomLevel(100)
+    setZoomLevel(typeof window !== 'undefined' && window.innerWidth < 640 ? 80 : 100)
     setPan({ x: 0, y: 0 })
   }
 
@@ -1065,6 +1076,7 @@ function InteractiveMindMap({
 
   // Touch support for mobile & tablet drag panning
   const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button, input, select, a, textarea')) return
     if (e.touches.length === 1) {
       const touch = e.touches[0]
       setIsDragging(true)
@@ -1120,35 +1132,35 @@ function InteractiveMindMap({
   return (
     <div className="relative rounded-2xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col">
       {/* Top Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 border-b border-border/60 bg-secondary/15 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/30 shadow-inner">
-            <Network size={22} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-border/60 bg-secondary/15 backdrop-blur-md">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/30 shadow-inner">
+            <Network size={20} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-base">Interactive Domain Competency Mind Map</h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-mono text-primary font-bold">
-                <Move size={10} /> Drag to Pan & Zoom
+            <div className="flex flex-wrap items-center gap-1.5">
+              <h2 className="font-semibold text-sm sm:text-base">Domain Competency Mind Map</h2>
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[9px] sm:text-[10px] font-mono text-primary font-bold">
+                <Move size={10} /> Drag to Pan
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Click any node to open the interactive tutorial & code blueprint drawer
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+              Tap any technology node to open the tutorial & code blueprint
             </p>
           </div>
         </div>
 
-        {/* Toolbar: Search, Category Filters, Zoom & Pan Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Toolbar: Search, Zoom & Pan Controls */}
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           {/* Quick Search */}
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 sm:flex-initial">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search skill nodes..."
+              placeholder="Search nodes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-44 sm:w-52 pl-8 pr-3 py-1.5 text-xs rounded-xl bg-secondary/50 border border-border/80 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              className="w-full sm:w-44 pl-7 pr-3 py-1.5 text-xs rounded-xl bg-secondary/50 border border-border/80 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -1162,16 +1174,16 @@ function InteractiveMindMap({
           </div>
 
           {/* Zoom Controls */}
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-secondary/40 p-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 rounded-xl border border-border bg-secondary/40 p-1">
             <button
               type="button"
               onClick={handleZoomOut}
               title="Zoom Out"
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
-              <ZoomOut size={15} />
+              <ZoomOut size={14} />
             </button>
-            <span className="font-mono text-xs text-foreground px-2 font-semibold min-w-[40px] text-center">
+            <span className="font-mono text-[11px] sm:text-xs text-foreground px-1.5 font-semibold min-w-[34px] text-center">
               {zoomLevel}%
             </span>
             <button
@@ -1180,24 +1192,24 @@ function InteractiveMindMap({
               title="Zoom In"
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
-              <ZoomIn size={15} />
+              <ZoomIn size={14} />
             </button>
             <button
               type="button"
               onClick={handleResetCanvas}
-              title="Reset View (Center & 100%)"
+              title="Reset View"
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors ml-0.5"
             >
-              <RotateCcw size={14} />
+              <RotateCcw size={13} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Category Pills & Mastery Progress Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 bg-secondary/10 border-b border-border/40 text-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 sm:px-5 py-2.5 bg-secondary/10 border-b border-border/40 text-xs">
         {/* Category Pill Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
           {[
             { id: 'all', label: 'All Pillars' },
             { id: 'foundations', label: '01 Foundations' },
@@ -1208,7 +1220,7 @@ function InteractiveMindMap({
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all ${
+              className={`shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all ${
                 activeCategory === cat.id
                   ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
                   : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -1220,13 +1232,13 @@ function InteractiveMindMap({
         </div>
 
         {/* Mastered Progress Gauge */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-3">
           <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
             <span>Mastery:</span>
-            <span className="text-primary font-bold">{masteredCount} / {totalCount}</span>
+            <span className="text-primary font-bold">{masteredCount}/{totalCount}</span>
             <span>({masteryPercentage}%)</span>
           </div>
-          <div className="w-24 h-2 rounded-full bg-secondary overflow-hidden border border-border/60">
+          <div className="w-20 sm:w-24 h-2 rounded-full bg-secondary overflow-hidden border border-border/60">
             <div
               className="h-full bg-primary transition-all duration-300 rounded-full"
               style={{ width: `${masteryPercentage}%` }}
@@ -1244,7 +1256,7 @@ function InteractiveMindMap({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className={`relative h-[560px] w-full overflow-hidden select-none ${
+        className={`relative h-[460px] sm:h-[560px] w-full overflow-hidden select-none touch-pan-canvas ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
         style={{
@@ -1255,8 +1267,8 @@ function InteractiveMindMap({
         }}
       >
         {/* Floating Pan Hint */}
-        <div className="absolute top-3 left-3 z-10 pointer-events-none rounded-lg bg-black/60 border border-border/60 px-2.5 py-1 text-[10px] font-mono text-muted-foreground backdrop-blur-sm">
-          💡 Click & drag canvas to pan • Click node to inspect
+        <div className="absolute top-3 left-3 z-10 pointer-events-none rounded-lg bg-black/70 border border-border/60 px-2.5 py-1 text-[9px] sm:text-[10px] font-mono text-muted-foreground backdrop-blur-sm">
+          💡 Drag canvas to pan • Tap node to inspect
         </div>
 
         {/* Scaled & Translated Node Grid */}
@@ -1372,16 +1384,19 @@ function NodeInspectorDrawer({
   )}`
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-card border-l border-border h-full p-6 overflow-y-auto shadow-2xl flex flex-col justify-between space-y-6">
-        <div className="space-y-5">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-stretch sm:justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full sm:max-w-lg bg-card border-t sm:border-t-0 sm:border-l border-border max-h-[90vh] sm:max-h-full sm:h-full p-4 sm:p-6 overflow-y-auto shadow-2xl flex flex-col justify-between space-y-5 rounded-t-3xl sm:rounded-none">
+        {/* Mobile Swipe / Drag Handle */}
+        <div className="mx-auto w-12 h-1.5 rounded-full bg-border sm:hidden shrink-0 -mt-1 mb-1" />
+
+        <div className="space-y-4 sm:space-y-5">
           {/* Header */}
-          <div className="flex items-start justify-between pb-4 border-b border-border/60">
+          <div className="flex items-start justify-between pb-3.5 border-b border-border/60">
             <div>
-              <span className="inline-block font-mono text-[10px] uppercase font-bold text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded-full mb-2">
+              <span className="inline-block font-mono text-[10px] uppercase font-bold text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded-full mb-1.5">
                 {selectedNode.category}
               </span>
-              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
                 {isMastered && <ShieldCheck size={18} className="text-primary shrink-0" />}
                 <span>{selectedNode.skill.name}</span>
               </h3>
@@ -1389,7 +1404,7 @@ function NodeInspectorDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="rounded-xl p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors shrink-0"
             >
               <X size={18} />
             </button>
@@ -1400,7 +1415,7 @@ function NodeInspectorDrawer({
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1.5">
               <Sparkles size={13} className="text-primary" /> Overview & 2026 Industry Context
             </h4>
-            <div className="text-xs leading-relaxed text-foreground/90 bg-secondary/25 p-3.5 rounded-xl border border-border/60 space-y-2">
+            <div className="text-xs leading-relaxed text-foreground/90 bg-secondary/25 p-3 sm:p-3.5 rounded-xl border border-border/60 space-y-2">
               <p>{selectedNode.skill.description}</p>
               <p className="text-[11px] text-muted-foreground">
                 In 2026 hiring cycles, engineers are evaluated on how cleanly they integrate {selectedNode.skill.name} into scalable distributed architectures and production pipelines.
@@ -1607,18 +1622,18 @@ function Results({
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Universal Top Header (Hidden in PDF Print) */}
-      <header className="no-print mx-auto flex max-w-6xl items-center justify-between px-6 py-6 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Compass size={19} />
+      <header className="no-print mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-border/40">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <Compass size={18} />
           </div>
-          <span className="font-mono text-base font-semibold">
+          <span className="font-mono text-sm sm:text-base font-semibold">
             skillgap<span className="text-primary">.ai</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <nav className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <nav className="hidden md:flex items-center gap-2">
             <Link
               href="/"
               className="flex items-center gap-1 rounded-lg bg-primary/15 border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary"
@@ -1637,14 +1652,16 @@ function Results({
           <button
             type="button"
             onClick={exportPDF}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-95 transition-all"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-95 transition-all"
           >
-            <FileDown size={14} /> Download Roadmap as PDF
+            <FileDown size={14} />
+            <span className="hidden sm:inline">Download Roadmap as PDF</span>
+            <span className="sm:hidden">Export PDF</span>
           </button>
 
           <button
             onClick={onReset}
-            className="rounded-xl border border-border px-3.5 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+            className="rounded-xl border border-border px-2.5 sm:px-3.5 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
           >
             ← Reset
           </button>
@@ -1780,7 +1797,7 @@ function Results({
 
       {/* Hero Intelligence Header (Hidden in print) */}
       <div className="no-print bg-gradient-to-b from-primary/[0.04] to-transparent border-b border-border/30">
-        <section className="mx-auto max-w-6xl px-6 pt-8 pb-6">
+        <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 sm:pt-8 pb-5 sm:pb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="font-mono text-xs uppercase tracking-[.18em] text-primary">
               Your Intelligence Brief
@@ -1801,16 +1818,16 @@ function Results({
               </span>
             )}
           </div>
-          <h1 className="text-2xl font-semibold tracking-[-0.05em] sm:text-3xl lg:text-4xl">
+          <h1 className="text-xl font-semibold tracking-[-0.05em] sm:text-3xl lg:text-4xl">
             Your personalized career pivot roadmap
           </h1>
-          <p className="mt-3 text-xs sm:text-sm leading-relaxed text-muted-foreground max-w-3xl">
+          <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-muted-foreground max-w-3xl">
             {analysis.summary}
           </p>
 
           {/* Personalized Tip */}
           {analysis.personalized_tip && (
-            <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3.5 sm:p-4 flex items-start gap-3 shadow-lg shadow-primary/5">
+            <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3 sm:p-4 flex items-start gap-3 shadow-lg shadow-primary/5">
               <div className="p-1.5 rounded-lg bg-primary/20 text-primary shrink-0 mt-0.5">
                 <Lightbulb size={16} />
               </div>
@@ -1824,14 +1841,14 @@ function Results({
           )}
 
           {/* 🔘 TOP SECTION SWITCHER (TABS BAR) */}
-          <div className="mt-8 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          <div className="mt-6 sm:mt-8 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
+                  className={`flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]'
                       : 'border border-border/80 bg-card/60 text-muted-foreground hover:border-primary/50 hover:text-foreground'
@@ -1841,7 +1858,7 @@ function Results({
                   <span>{tab.label}</span>
                   {tab.badge && (
                     <span
-                      className={`rounded-full px-1.5 py-0.2 font-mono text-[10px] ${
+                      className={`rounded-full px-1.5 py-0.2 font-mono text-[9px] sm:text-[10px] ${
                         isActive
                           ? 'bg-primary-foreground/20 text-primary-foreground'
                           : 'bg-secondary text-muted-foreground'
@@ -1858,7 +1875,7 @@ function Results({
       </div>
 
       {/* Main Tab Viewport */}
-      <section className="mx-auto max-w-6xl px-6 py-8">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
         {/* =========================================================================
             TAB 1: OVERVIEW & READINESS & PRIORITY GAPS
         ========================================================================= */}

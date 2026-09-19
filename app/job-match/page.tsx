@@ -318,29 +318,33 @@ export default function JobMatchPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Universal Top Header */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Compass size={19} />
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-border/40">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <Compass size={18} />
           </div>
-          <span className="font-mono text-base font-semibold tracking-tight">
+          <span className="font-mono text-sm sm:text-base font-semibold tracking-tight">
             skillgap<span className="text-primary">.ai</span>
           </span>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2">
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-lg border border-border/70 px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-lg border border-border/70 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
           >
-            <Layers size={13} /> Career Pivot Roadmap
+            <Layers size={13} />
+            <span className="hidden sm:inline">Career Pivot Roadmap</span>
+            <span className="sm:hidden">Roadmap</span>
           </Link>
           <Link
             href="/job-match"
-            className="flex items-center gap-1.5 rounded-lg bg-primary/15 border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-lg bg-primary/15 border border-primary/40 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-primary shadow-sm"
           >
-            <Zap size={13} /> Live Job Match & Diff Engine
+            <Zap size={13} />
+            <span className="hidden sm:inline">Live Job Match & ATS Diff</span>
+            <span className="sm:hidden">Job Match</span>
             <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[9px] font-bold">
               NEW
             </span>
@@ -349,22 +353,22 @@ export default function JobMatchPage() {
       </header>
 
       {/* Hero Banner */}
-      <section className="bg-gradient-to-b from-primary/[0.04] to-transparent border-b border-border/30 px-6 py-10">
+      <section className="bg-gradient-to-b from-primary/[0.04] to-transparent border-b border-border/30 px-4 sm:px-6 py-6 sm:py-10">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary">
+          <div className="mb-3 sm:mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 sm:px-3.5 py-1.5 text-xs font-medium text-primary">
             <Sparkles size={14} /> Semantic Job Description Diff & Real-Time ATS Audit Engine
           </div>
-          <h1 className="text-3xl font-semibold tracking-[-0.05em] sm:text-4xl lg:text-5xl max-w-3xl">
+          <h1 className="text-2xl font-semibold tracking-[-0.05em] sm:text-4xl lg:text-5xl max-w-3xl">
             Live Job Match & <span className="text-primary">ATS Diff Engine</span>
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-2xl">
+          <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm leading-relaxed text-muted-foreground max-w-2xl">
             Paste any Job Description or URL from LinkedIn, Greenhouse, Lever, or Indeed. Directly diff your resume to expose ATS keyword blockers, audit hard requirements, and get a tailored cover letter and 7-day interview sprint plan.
           </p>
         </div>
       </section>
 
       {/* Main Content Area */}
-      <section className="mx-auto max-w-6xl px-6 py-10">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
         {!diffResult ? (
           /* =========================================================================
              INPUT INTERFACE (SPLIT COLUMNS)
@@ -766,53 +770,63 @@ export default function JobMatchPage() {
             </div>
 
             {/* Results Navigation Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-border/60">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 border-b border-border/60">
               <button
                 type="button"
                 onClick={() => setActiveTab('keywords')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'keywords'
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'border border-border/80 bg-card/60 text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 }`}
               >
-                <Search size={14} /> Keyword Audit ({diffResult.keyword_audit.matching_keywords.length} matched / {diffResult.keyword_audit.missing_ats_keywords.length} gaps)
+                <Search size={14} />
+                <span className="hidden sm:inline">Keyword Audit</span>
+                <span className="sm:hidden">Keywords</span>
+                <span className="font-mono text-[10px] opacity-85">({diffResult.keyword_audit.matching_keywords.length}/{diffResult.keyword_audit.missing_ats_keywords.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('requirements')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'requirements'
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'border border-border/80 bg-card/60 text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 }`}
               >
-                <CheckCircle2 size={14} /> Hard Requirements Audit ({diffResult.hard_requirements_audit.length})
+                <CheckCircle2 size={14} />
+                <span className="hidden sm:inline">Hard Requirements Audit</span>
+                <span className="sm:hidden">Requirements</span>
+                <span className="font-mono text-[10px] opacity-85">({diffResult.hard_requirements_audit.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('letter')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'letter'
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'border border-border/80 bg-card/60 text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 }`}
               >
-                <FileText size={14} /> Tailored Cover Letter
+                <FileText size={14} />
+                <span className="hidden sm:inline">Tailored Cover Letter</span>
+                <span className="sm:hidden">Cover Letter</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('interview')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'interview'
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'border border-border/80 bg-card/60 text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 }`}
               >
-                <Clock size={14} /> 7-Day Interview Sprint
+                <Clock size={14} />
+                <span className="hidden sm:inline">7-Day Interview Sprint</span>
+                <span className="sm:hidden">7-Day Sprint</span>
               </button>
             </div>
 
