@@ -22,6 +22,7 @@ import {
   BookOpen,
   User,
   Lightbulb,
+  GraduationCap,
   PlayCircle,
   Video,
   Clock,
