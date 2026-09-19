@@ -137,19 +137,19 @@ const POPULAR_SKILLS = [
 ]
 
 const LEARNING_STYLES = [
-  '🛠️ Hands-on Projects',
-  '📹 Video Tutorials',
-  '📚 Official Docs & Books',
-  '🧩 Interactive Coding',
-  '👥 Mentorship & Cohorts',
+  { label: '🛠️ Hands-on Projects', value: '🛠️ Hands-on Projects', hint: 'Build real apps & learn by doing' },
+  { label: '📹 Video Tutorials', value: '📹 Video Tutorials', hint: 'Step-by-step video courses & walkthroughs' },
+  { label: '📚 Official Docs & Books', value: '📚 Official Docs & Books', hint: 'Deep architectural theory & references' },
+  { label: '🧩 Interactive Coding', value: '🧩 Interactive Coding', hint: 'Hands-on browser challenges & sandbox drills' },
+  { label: '👥 Mentorship & Cohorts', value: '👥 Mentorship & Cohorts', hint: 'Community feedback & code reviews' },
 ]
 
-const CONTEXT_TAGS = [
-  '💼 Working Full-Time',
-  '🎓 College / University Student',
-  '🔄 Career Switcher',
-  '🆓 Free Resources Only',
-  '⚡ Fast-Track Interview Prep',
+const CONTEXT_OPTIONS = [
+  { label: '💼 Working Full-Time', value: '💼 Working Full-Time', hint: 'Concentrated study hours, evening/weekend focus' },
+  { label: '🎓 College / University Student', value: '🎓 College / University Student', hint: 'Flexible academic schedule, internship focus' },
+  { label: '🔄 Career Switcher', value: '🔄 Career Switcher', hint: 'Transitioning domains, high-leverage skill emphasis' },
+  { label: '🆓 Free Resources Only', value: '🆓 Free Resources Only', hint: 'Zero-cost open-source roadmaps & YouTube' },
+  { label: '⚡ Fast-Track Interview Prep', value: '⚡ Fast-Track Interview Prep', hint: 'Urgent turnaround for upcoming screens' },
 ]
 
 export default function Page() {
@@ -165,7 +165,7 @@ export default function Page() {
   // "About You" & Learning Preferences State
   const [aboutYou, setAboutYou] = useState('')
   const [learningStyle, setLearningStyle] = useState('🛠️ Hands-on Projects')
-  const [selectedContextTags, setSelectedContextTags] = useState<string[]>(['💼 Working Full-Time'])
+  const [currentSituation, setCurrentSituation] = useState('💼 Working Full-Time')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -192,12 +192,6 @@ export default function Page() {
   const toggleSkill = (skill: string) => {
     setSkills((current) =>
       current.includes(skill) ? current.filter((item) => item !== skill) : [...current, skill]
-    )
-  }
-
-  const toggleContextTag = (tag: string) => {
-    setSelectedContextTags((current) =>
-      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
     )
   }
 
@@ -341,7 +335,7 @@ export default function Page() {
 
       const combinedAboutYou = [
         aboutYou.trim(),
-        selectedContextTags.length > 0 ? `Situation / Constraints: ${selectedContextTags.join(', ')}` : '',
+        currentSituation ? `Situation / Constraints: ${currentSituation}` : '',
       ]
         .filter(Boolean)
         .join('\n\n')
@@ -537,54 +531,23 @@ export default function Page() {
                 />
               </Field>
 
-              {/* Learning Style Chips */}
-              <div className="mt-4">
-                <label className="block mb-2 text-xs font-medium text-foreground">
-                  How do you learn best?
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {LEARNING_STYLES.map((style) => (
-                    <button
-                      type="button"
-                      key={style}
-                      onClick={() => setLearningStyle(style)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
-                        learningStyle === style
-                          ? 'border-primary bg-primary/20 text-primary shadow-sm'
-                          : 'border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground'
-                      }`}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Learning Style & Situation Dropdowns */}
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Field label="How do you learn best?">
+                  <CustomDropdown
+                    value={learningStyle}
+                    onChange={setLearningStyle}
+                    options={LEARNING_STYLES}
+                  />
+                </Field>
 
-              {/* Context / Situation Tags */}
-              <div className="mt-4">
-                <label className="block mb-2 text-xs font-medium text-foreground">
-                  Your current situation / constraints
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {CONTEXT_TAGS.map((tag) => {
-                    const isSelected = selectedContextTags.includes(tag)
-                    return (
-                      <button
-                        type="button"
-                        key={tag}
-                        onClick={() => toggleContextTag(tag)}
-                        className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs transition-colors ${
-                          isSelected
-                            ? 'bg-primary/20 text-primary border border-primary/40 font-medium'
-                            : 'bg-secondary/40 text-muted-foreground border border-border hover:border-primary/40 hover:text-foreground'
-                        }`}
-                      >
-                        {isSelected && <Check size={12} />}
-                        {tag}
-                      </button>
-                    )
-                  })}
-                </div>
+                <Field label="Your current situation / constraints" hint="Select one">
+                  <CustomDropdown
+                    value={currentSituation}
+                    onChange={setCurrentSituation}
+                    options={CONTEXT_OPTIONS}
+                  />
+                </Field>
               </div>
             </div>
 
