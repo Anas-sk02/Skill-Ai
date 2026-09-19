@@ -342,9 +342,19 @@ Return this exact shape:
       "url": string,
       "why": string
     }}
+  ],
+  "youtube_masterclasses": [
+    {{
+      "title": string,
+      "channel": "freeCodeCamp.org" | "StatQuest" | "3Blue1Brown" | "Fireship" | "NeetCode" | "Traversy Media" | "Krish Naik" | "Corey Schafer" | "Andrej Karpathy" | string,
+      "duration": string,
+      "search_query": string,
+      "focus_topic": string,
+      "why": string
+    }}
   ]
 }}
-Include 4-6 skill gaps, 3-4 roadmap phases, and 5 resources matching their preferred style. Prioritize skills employers actually ask for now, explain tradeoffs, and make the sequence fit the learner's hours and timeline.'''
+Include 4-6 skill gaps, 3-4 roadmap phases, 5 standard resources, and 3-4 top YouTube masterclasses tailored to their missing skills. Prioritize skills employers actually ask for now, explain tradeoffs, and make the sequence fit the learner's hours and timeline.'''
 
     try:
         response = model.generate_content(

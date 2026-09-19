@@ -22,7 +22,11 @@ import {
   BookOpen,
   User,
   Lightbulb,
-  GraduationCap,
+  Youtube,
+  PlayCircle,
+  Video,
+  Clock,
+  ExternalLink,
 } from 'lucide-react'
 
 type Analysis = {
@@ -34,6 +38,14 @@ type Analysis = {
   missing_skills: { skill: string; priority: string; gap: string; why: string }[]
   roadmap: { phase: string; focus: string; outcome: string }[]
   resources: { title: string; provider: string; type: string; level: string; url: string; why: string }[]
+  youtube_masterclasses?: {
+    title: string
+    channel: string
+    duration: string
+    search_query: string
+    focus_topic: string
+    why: string
+  }[]
 }
 
 type ParsedResume = {
@@ -1058,6 +1070,84 @@ function Results({
             </div>
           </div>
         </div>
+
+        {/* 📺 Embedded YouTube Masterclasses Section */}
+        {analysis.youtube_masterclasses && analysis.youtube_masterclasses.length > 0 && (
+          <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
+                  <Youtube size={20} />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-base">Curated YouTube Masterclasses</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Deep-dive video walkthroughs from world-class tech educators
+                  </p>
+                </div>
+              </div>
+              <span className="font-mono text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full flex items-center gap-1.5">
+                <PlayCircle size={13} /> {analysis.youtube_masterclasses.length} Masterclasses Picked
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {analysis.youtube_masterclasses.map((video, idx) => {
+                const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
+                  video.search_query || `${video.title} ${video.channel}`
+                )}`
+
+                return (
+                  <div
+                    key={idx}
+                    className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-secondary/20 p-4 transition-all hover:border-red-500/50 hover:bg-secondary/35"
+                  >
+                    <div>
+                      {/* Top Channel & Duration */}
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span className="inline-flex items-center gap-1 rounded bg-red-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-red-400 border border-red-500/25">
+                          {video.channel}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground">
+                          <Clock size={11} /> {video.duration}
+                        </span>
+                      </div>
+
+                      {/* Video Title */}
+                      <h3 className="text-sm font-semibold text-foreground group-hover:text-red-400 transition-colors line-clamp-2">
+                        {video.title}
+                      </h3>
+
+                      {/* Focus Tag */}
+                      <div className="mt-2 mb-2">
+                        <span className="inline-block rounded border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] font-mono text-primary uppercase tracking-wider">
+                          🎯 {video.focus_topic}
+                        </span>
+                      </div>
+
+                      {/* Why it was chosen */}
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                        {video.why}
+                      </p>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="mt-4 pt-3 border-t border-border/60">
+                      <a
+                        href={searchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-500/15 py-2 text-xs font-semibold text-red-400 border border-red-500/30 transition-all hover:bg-red-500 hover:text-white"
+                      >
+                        <PlayCircle size={14} /> Watch on YouTube <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </section>
     </main>
   )
